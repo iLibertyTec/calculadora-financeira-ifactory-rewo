@@ -68,6 +68,31 @@ Deno.test("handler retorna 400 para payload inválido em /api/juros-compostos", 
   assertEquals(response.status, 400);
   assertObjectMatch(await response.json(), {
     error: "invalid payload",
+    details: {
+      taxa: "must be a finite number",
+    },
+  });
+});
+
+Deno.test("handler retorna 400 para periodos não inteiro em /api/juros-compostos", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        capitalInicial: 1000,
+        taxa: 0.1,
+        periodos: 2.5,
+      }),
+    }),
+  );
+
+  assertEquals(response.status, 400);
+  assertObjectMatch(await response.json(), {
+    error: "invalid payload",
+    details: {
+      periodos: "must be an integer",
+    },
   });
 });
 

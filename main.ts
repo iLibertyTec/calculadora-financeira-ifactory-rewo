@@ -9,20 +9,61 @@ type JurosCompostosPayload = {
   periodos: number;
 };
 
-function isJurosCompostosPayload(
-  value: unknown,
-): value is JurosCompostosPayload {
+type ValidationResult =
+  | {
+    ok: true;
+    payload: JurosCompostosPayload;
+  }
+  | {
+    ok: false;
+    errors: Record<string, string>;
+  };
+
+function validateJurosCompostosPayload(value: unknown): ValidationResult {
   if (typeof value !== "object" || value === null) {
-    return false;
+    return {
+      ok: false,
+      errors: {
+        body: "must be an object",
+      },
+    };
   }
 
   const payload = value as Record<string, unknown>;
+  const errors: Record<string, string> = {};
 
-  return typeof payload.capitalInicial === "number" &&
-    Number.isFinite(payload.capitalInicial) &&
-    typeof payload.taxa === "number" && Number.isFinite(payload.taxa) &&
-    typeof payload.periodos === "number" &&
-    Number.isFinite(payload.periodos);
+  if (
+    typeof payload.capitalInicial !== "number" ||
+    !Number.isFinite(payload.capitalInicial)
+  ) {
+    errors.capitalInicial = "must be a finite number";
+  }
+
+  if (typeof payload.taxa !== "number" || !Number.isFinite(payload.taxa)) {
+    errors.taxa = "must be a finite number";
+  }
+
+  if (typeof payload.periodos !== "number" || !Number.isFinite(payload.periodos)) {
+    errors.periodos = "must be a finite number";
+  } else if (!Number.isInteger(payload.periodos)) {
+    errors.periodos = "must be an integer";
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      errors,
+    };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      capitalInicial: payload.capitalInicial,
+      taxa: payload.taxa,
+      periodos: payload.periodos,
+    },
+  };
 }
 
 export async function handler(req: Request): Promise<Response> {
@@ -46,20 +87,26 @@ export async function handler(req: Request): Promise<Response> {
         return Response.json({ error: "invalid json" }, { status: 400 });
       }
 
-      if (!isJurosCompostosPayload(body)) {
-        return Response.json({ error: "invalid payload" }, { status: 400 });
+      const validation = validateJurosCompostosPayload(body);
+
+      if (!validation.ok) {
+        return Response.json(
+          { error: "invalid payload", details: validation.errors },
+          { status: 400 },
+        );
       }
 
+      const { capitalInicial, taxa, periodos } = validation.payload;
       const montante = calcularJurosCompostos(
-        body.capitalInicial,
-        body.taxa,
-        body.periodos,
+        capitalInicial,
+        taxa,
+        periodos,
       );
 
       return Response.json({
-        capitalInicial: body.capitalInicial,
-        taxa: body.taxa,
-        periodos: body.periodos,
+        capitalInicial,
+        taxa,
+        periodos,
         montante,
       });
     }

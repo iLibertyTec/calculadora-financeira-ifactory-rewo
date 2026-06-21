@@ -36,6 +36,19 @@ function jsonResponse(body: unknown, init?: ResponseInit): Response {
   });
 }
 
+function htmlResponse(body: string, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+
+  if (!headers.has("content-type")) {
+    headers.set("content-type", "text/html; charset=utf-8");
+  }
+
+  return new Response(body, {
+    ...init,
+    headers,
+  });
+}
+
 function hasJsonContentType(req: Request): boolean {
   const contentType = req.headers.get("content-type");
 
@@ -113,6 +126,175 @@ function validateJurosCompostosPayload(value: unknown): ValidationResult {
   };
 }
 
+function renderHomePage(): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Calculadora Financeira iFactory</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1020;
+        --panel: #151c33;
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text: #ecf1ff;
+        --muted: #afbad6;
+        --accent: #7cb2ff;
+        --accent-strong: #4c8dff;
+        --code-bg: rgba(124, 178, 255, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: linear-gradient(180deg, #0b1020 0%, #121a30 100%);
+        color: var(--text);
+      }
+
+      main {
+        width: min(960px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 64px;
+      }
+
+      .hero,
+      .section {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+      }
+
+      .hero {
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        margin-bottom: 12px;
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2 {
+        margin: 0 0 12px;
+        line-height: 1.2;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 3rem);
+      }
+
+      h2 {
+        font-size: 1.3rem;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+      }
+
+      code {
+        background: var(--code-bg);
+        border-radius: 8px;
+        padding: 2px 6px;
+        color: var(--text);
+      }
+
+      pre {
+        margin: 16px 0 0;
+        padding: 16px;
+        overflow-x: auto;
+        background: #0a1327;
+        border: 1px solid var(--panel-border);
+        border-radius: 14px;
+        color: var(--text);
+      }
+
+      .section + .section {
+        margin-top: 24px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="hero" aria-labelledby="titulo-principal">
+        <span class="eyebrow">iFactory</span>
+        <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
+        <p>
+          API simples para cálculo de juros compostos, pronta para testes,
+          integração com front-end e automações internas.
+        </p>
+      </section>
+
+      <div class="grid">
+        <section class="section" aria-labelledby="como-usar">
+          <h2 id="como-usar">Como usar</h2>
+          <ul>
+            <li>Envie um <strong>POST</strong> para <code>/api/juros-compostos</code>.</li>
+            <li>Informe <code>capitalInicial</code>, <code>taxa</code> e <code>periodos</code>.</li>
+            <li>Receba o <code>montante</code> calculado pela API.</li>
+          </ul>
+        </section>
+
+        <section class="section" aria-labelledby="campos">
+          <h2 id="campos">Campos esperados</h2>
+          <ul>
+            <li><code>capitalInicial</code>: número finito.</li>
+            <li><code>taxa</code>: número finito em formato decimal.</li>
+            <li><code>periodos</code>: número inteiro finito.</li>
+          </ul>
+        </section>
+      </div>
+
+      <section class="section" aria-labelledby="exemplo-api">
+        <h2 id="exemplo-api">Exemplo de requisição</h2>
+        <p>
+          Use JSON com <code>content-type: application/json</code> para consumir o endpoint.
+        </p>
+        <pre aria-label="Exemplo de uso da API">curl -X POST http://localhost:8000/api/juros-compostos \
+  -H "content-type: application/json" \
+  -d '{
+    "capitalInicial": 1000,
+    "taxa": 0.1,
+    "periodos": 2
+  }'</pre>
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
@@ -185,7 +367,7 @@ export async function handler(req: Request): Promise<Response> {
 
   if (url.pathname === "/api/visits" && req.method === "POST") {
     const body = req.headers.get("content-type")?.includes("json")
-      ? await req.json().catch(() => ({}))
+      ? await req.json().catch((): Record<string, never> => ({}))
       : {};
     const visitorId = typeof body.visitorId === "string"
       ? body.visitorId
@@ -198,62 +380,13 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   if (url.pathname === "/") {
-    const html = `<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>iFactory Product — Visit Analytics</title>
-<style>
-:root{--bg:#080b17;--panel:#141b34;--ink:#eaeefa;--mut:#8b95b8;--accent:#4c8dff}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:grid;place-items:center}
-.card{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:36px;text-align:center;max-width:420px;width:90%}
-h1{font-size:1.35rem;margin-bottom:8px}
-p{color:var(--mut);font-size:.9rem;margin-bottom:20px}
-#count{font-size:3rem;font-weight:700;color:var(--accent);margin:12px 0}
-button{background:var(--accent);color:#fff;border:none;padding:12px 24px;border-radius:10px;font-weight:600;cursor:pointer}
-.badge{display:inline-block;margin-top:16px;font-size:.75rem;color:var(--mut)}
-</style></head>
-<body><div class="card">
-<h1>Visit Analytics</h1>
-<p>Evolved by the iFactory autonomous team.</p>
-<div id="count">0</div>
-<p id="msg"></p>
-<button id="btn">Registrar visita</button>
-<div class="badge">API: <code>/api/visits</code></div>
-</div>
-<script>
-const count = document.getElementById('count');
-const msg = document.getElementById('msg');
-const btn = document.getElementById('btn');
-const visitorKey = 'ifactory_visitor_id';
-let visitorId = localStorage.getItem(visitorKey);
-if (!visitorId) {
-  visitorId = crypto.randomUUID();
-  localStorage.setItem(visitorKey, visitorId);
-}
-async function refresh() {
-  const res = await fetch('/api/visits');
-  const data = await res.json();
-  count.textContent = data.visits;
-  msg.textContent = data.uniqueVisitors + ' visitantes únicos';
-}
-btn.addEventListener('click', async () => {
-  const res = await fetch('/api/visits', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ visitorId }),
-  });
-  const data = await res.json();
-  count.textContent = data.visits;
-  msg.textContent = data.message;
-});
-refresh();
-</script></body></html>`;
-    return new Response(html, {
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
+    return htmlResponse(renderHomePage());
   }
 
-  return jsonResponse({ error: "not found" }, { status: 404 });
+  return jsonResponse(
+    { error: "not found" },
+    { status: 404 },
+  );
 }
 
 if (import.meta.main) {

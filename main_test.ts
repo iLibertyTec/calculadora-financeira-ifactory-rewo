@@ -1,8 +1,30 @@
 import {
+  assert,
   assertEquals,
   assertObjectMatch,
+  assertStringIncludes,
 } from "@std/assert";
 import { handler } from "./main.ts";
+
+Deno.test("handler responde / com HTML da Calculadora Financeira iFactory", async () => {
+  const response = await handler(new Request("http://localhost/"));
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "text/html; charset=utf-8",
+  );
+
+  const html = await response.text();
+
+  assertStringIncludes(html, "<title>Calculadora Financeira iFactory</title>");
+  assertStringIncludes(html, "Calculadora Financeira iFactory");
+  assertStringIncludes(html, "/api/juros-compostos");
+  assert(!html.includes("Visit Analytics"));
+  assert(!html.includes("Registrar visita"));
+  assert(!html.includes("/api/visits"));
+  assert(!html.includes("visits"));
+});
 
 Deno.test("handler responde /health com status 200 e metadados do serviço", async () => {
   const response = await handler(new Request("http://localhost/health"));
@@ -223,19 +245,39 @@ Deno.test("handler retorna 405 para método incorreto em /api/juros-compostos", 
 });
 
 Deno.test("handler mantém GET /api/visits funcionando", async () => {
-  const response = await handler(new Request("http://localhost/api/visits"));
+  const response = await handler(
+    new Request("http://localhost/api/visits"),
+  );
 
   assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
   assertObjectMatch(await response.json(), {
-    visits: 0,
+    totalVisits: 0,
+    uniqueVisitors: 0,
   });
 });
 
-Deno.test("handler retorna 404 para rota desconhecida", async () => {
-  const response = await handler(new Request("http://localhost/nao-existe"));
+Deno.test("handler mantém POST /api/visits funcionando", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/visits", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        visitorId: "visitor-1",
+      }),
+    }),
+  );
 
-  assertEquals(response.status, 404);
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
   assertObjectMatch(await response.json(), {
-    error: "not found",
+    totalVisits: 1,
+    uniqueVisitors: 1,
   });
 });

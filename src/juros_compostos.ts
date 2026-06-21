@@ -29,7 +29,7 @@ export function calcularJurosCompostos(
   const principalValidado = validarNumeroFinito(principal, "principal");
   const taxaValidada = validarNumeroFinito(
     taxaMensalPercentual,
-    "taxaMensal",
+    "taxaMensalPercentual",
   );
   const mesesValidado = validarNumeroFinito(meses, "meses");
 
@@ -38,7 +38,7 @@ export function calcularJurosCompostos(
   }
 
   if (taxaValidada < 0) {
-    throw new RangeError("taxaMensal não pode ser negativa.");
+    throw new RangeError("taxaMensalPercentual não pode ser negativa.");
   }
 
   if (mesesValidado < 0) {

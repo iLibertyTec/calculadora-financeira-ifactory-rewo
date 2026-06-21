@@ -131,7 +131,7 @@ export async function handler(req: Request): Promise<Response> {
       });
     } catch (error) {
       const message = error instanceof Error
-        ? error.message
+        ? error.message.replaceAll("taxaMensalPercentual", "taxaMensal")
         : "Dados inválidos.";
       return Response.json({ error: message }, { status: 400 });
     }

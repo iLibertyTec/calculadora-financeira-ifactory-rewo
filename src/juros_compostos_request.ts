@@ -65,26 +65,36 @@ export async function readJurosCompostosRequest(
     };
   }
 
-  if (typeof payload.principal !== "number" || Number.isNaN(payload.principal)) {
+  if (
+    typeof payload.principal !== "number" ||
+    !Number.isFinite(payload.principal) ||
+    payload.principal <= 0
+  ) {
     return {
       success: false,
-      error: "O campo principal deve ser numérico.",
+      error: "O campo principal deve ser um número finito maior que zero.",
     };
   }
 
   if (
-    typeof payload.taxaMensal !== "number" || Number.isNaN(payload.taxaMensal)
+    typeof payload.taxaMensal !== "number" ||
+    !Number.isFinite(payload.taxaMensal)
   ) {
     return {
       success: false,
-      error: "O campo taxaMensal deve ser numérico.",
+      error: "O campo taxaMensal deve ser um número finito.",
     };
   }
 
-  if (typeof payload.meses !== "number" || Number.isNaN(payload.meses)) {
+  if (
+    typeof payload.meses !== "number" ||
+    !Number.isFinite(payload.meses) ||
+    !Number.isInteger(payload.meses) ||
+    payload.meses <= 0
+  ) {
     return {
       success: false,
-      error: "O campo meses deve ser numérico.",
+      error: "O campo meses deve ser um número inteiro positivo.",
     };
   }
 

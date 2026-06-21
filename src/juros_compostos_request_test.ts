@@ -21,6 +21,31 @@ Deno.test("retorna erro quando content-type não indica JSON", async () => {
   });
 });
 
+Deno.test("aceita variantes de content-type JSON", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/problem+json",
+    },
+    body: JSON.stringify({
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 12,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertObjectMatch(result, {
+    success: true,
+    data: {
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 12,
+    },
+  });
+});
+
 Deno.test("retorna erro quando JSON é inválido", async () => {
   const req = new Request("http://localhost/api/juros-compostos", {
     method: "POST",
@@ -115,7 +140,49 @@ Deno.test("retorna erro quando principal não é numérico", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo principal deve ser numérico.",
+    error: "O campo principal deve ser um número finito maior que zero.",
+  });
+});
+
+Deno.test("retorna erro quando principal é zero", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: 0,
+      taxaMensal: 1.5,
+      meses: 12,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertEquals(result, {
+    success: false,
+    error: "O campo principal deve ser um número finito maior que zero.",
+  });
+});
+
+Deno.test("retorna erro quando principal é negativo", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: -1000,
+      taxaMensal: 1.5,
+      meses: 12,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertEquals(result, {
+    success: false,
+    error: "O campo principal deve ser um número finito maior que zero.",
   });
 });
 
@@ -136,7 +203,7 @@ Deno.test("retorna erro quando taxaMensal não é numérico", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo taxaMensal deve ser numérico.",
+    error: "O campo taxaMensal deve ser um número finito.",
   });
 });
 
@@ -157,7 +224,112 @@ Deno.test("retorna erro quando meses não é numérico", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo meses deve ser numérico.",
+    error: "O campo meses deve ser um número inteiro positivo.",
+  });
+});
+
+Deno.test("retorna erro quando meses é fracionário", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 12.5,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertEquals(result, {
+    success: false,
+    error: "O campo meses deve ser um número inteiro positivo.",
+  });
+});
+
+Deno.test("retorna erro quando meses é zero", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 0,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertEquals(result, {
+    success: false,
+    error: "O campo meses deve ser um número inteiro positivo.",
+  });
+});
+
+Deno.test("retorna erro quando meses é negativo", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: -1,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertEquals(result, {
+    success: false,
+    error: "O campo meses deve ser um número inteiro positivo.",
+  });
+});
+
+Deno.test("retorna erro quando taxaMensal é infinita", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: 1000,
+      taxaMensal: null,
+      meses: 12,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertEquals(result, {
+    success: false,
+    error: "O campo taxaMensal deve ser um número finito.",
+  });
+});
+
+Deno.test("retorna erro quando principal não é finito", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: null,
+      taxaMensal: 1.5,
+      meses: 12,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertEquals(result, {
+    success: false,
+    error: "O campo principal deve ser um número finito maior que zero.",
   });
 });
 

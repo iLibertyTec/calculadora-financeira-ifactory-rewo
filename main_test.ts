@@ -14,9 +14,16 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /<title>Calculadora Financeira iFactory<\/title>/);
   assertMatch(body, /<style>/);
   assertMatch(body, /\.card/);
-  assertMatch(body, /grid-template-columns: repeat\(auto-fit, minmax\(180px, 1fr\)\);/);
+  assertMatch(
+    body,
+    /grid-template-columns: repeat\(auto-fit, minmax\(180px, 1fr\)\);/,
+  );
+  assertMatch(body, /output,\s*\[role="alert"\]\s*\{/);
+  assertMatch(body, /display: block;/);
+  assertMatch(body, /word-break: break-word;/);
   assertMatch(body, /@media \(max-width: 900px\)/);
   assertMatch(body, /@media \(max-width: 720px\)/);
+  assertMatch(body, /@media \(max-width: 400px\)/);
   assertMatch(body, /<legend>Dados da simulação<\/legend>/);
   assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
   assertMatch(body, /name="principal"/);
@@ -66,6 +73,7 @@ Deno.test("GET / processa a simulação pela query string", async () => {
   assertMatch(body, /value="1000,00"/);
   assertMatch(body, /value="1,5"/);
   assertMatch(body, /value="12"/);
+  assertMatch(body, /#resultado strong/);
   assertMatch(
     body,
     /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,

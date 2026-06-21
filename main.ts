@@ -234,10 +234,17 @@ function renderHomePage(url: URL): string {
         color: var(--ink);
       }
 
+      .hint,
+      .status {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
       input {
         width: 100%;
-        min-height: 48px;
-        padding: 12px 14px;
+        min-width: 0;
+        padding: 14px 16px;
         border: 1px solid var(--border);
         border-radius: 12px;
         font: inherit;
@@ -255,30 +262,23 @@ function renderHomePage(url: URL): string {
         border-color: var(--accent);
       }
 
-      small {
-        color: var(--muted);
-        line-height: 1.5;
-      }
-
       .actions {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
         flex-wrap: wrap;
+        gap: 12px;
       }
 
       button {
         appearance: none;
         border: 0;
         border-radius: 12px;
-        background: var(--accent-strong);
-        color: #ffffff;
+        padding: 14px 20px;
         font: inherit;
         font-weight: 700;
-        padding: 14px 20px;
-        min-height: 48px;
+        background: var(--accent-strong);
+        color: #ffffff;
         cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.2s ease;
       }
 
       button:hover,
@@ -286,48 +286,61 @@ function renderHomePage(url: URL): string {
         background: var(--accent);
       }
 
-      .status {
-        margin: 0;
-        font-size: 0.95rem;
-        color: var(--muted);
+      button:focus-visible {
+        outline: 3px solid rgba(29, 78, 216, 0.22);
+        outline-offset: 2px;
       }
 
-      .panel {
-        margin-top: 4px;
-        padding: 16px;
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      output,
+      [role="alert"] {
+        display: block;
+        margin: 0;
+        padding: 16px 18px;
         border-radius: 14px;
         border: 1px solid var(--border);
-        background: #f8fafc;
+        word-break: break-word;
+        overflow-wrap: anywhere;
       }
 
       #resultado {
-        display: block;
-        color: var(--success-ink);
         background: var(--success-bg);
         border-color: var(--success-border);
+        color: var(--success-ink);
+        font-weight: 600;
+      }
+
+      #resultado strong {
+        color: #166534;
+        font-size: 1.05em;
       }
 
       #erro {
-        color: var(--danger);
         background: var(--danger-bg);
         border-color: var(--danger-border);
+        color: var(--danger);
       }
 
-      #erro p:last-child {
-        margin-bottom: 0;
+      #erro p {
+        margin: 0;
+        color: inherit;
       }
 
-      .counter {
-        margin-top: 20px;
-        padding-top: 16px;
-        border-top: 1px solid var(--border);
-        font-size: 0.95rem;
-        color: var(--muted);
+      #erro p + p {
+        margin-top: 8px;
+      }
+
+      .panel {
+        display: grid;
+        gap: 12px;
       }
 
       @media (max-width: 900px) {
         .card {
-          max-width: 680px;
+          max-width: 100%;
         }
       }
 
@@ -338,44 +351,42 @@ function renderHomePage(url: URL): string {
 
         .card {
           padding: 24px;
-          border-radius: 16px;
+          border-radius: 18px;
         }
 
         fieldset {
           padding: 16px;
         }
-
-        .actions {
-          align-items: stretch;
-        }
-
-        button {
-          width: 100%;
-        }
       }
 
-      @media (max-width: 480px) {
-        .card {
-          padding: 20px;
+      @media (max-width: 400px) {
+        main {
+          padding: 12px;
         }
 
-        form {
-          gap: 16px;
+        .card {
+          padding: 18px;
+          border-radius: 16px;
         }
 
         fieldset {
           padding: 14px;
-          gap: 14px;
         }
 
-        .grid {
-          gap: 14px;
+        .grid,
+        form,
+        .panel {
+          gap: 12px;
         }
 
-        input,
+        output,
+        [role="alert"] {
+          padding: 14px;
+          font-size: 0.95rem;
+        }
+
         button {
-          min-height: 44px;
-          padding: 11px 13px;
+          width: 100%;
         }
       }
     </style>
@@ -386,9 +397,11 @@ function renderHomePage(url: URL): string {
         <div class="eyebrow">iFactory • Simulação financeira</div>
         <h1 id="titulo-pagina">Calculadora de juros compostos</h1>
         <p>
-          Simule o montante final a partir do valor inicial, taxa mensal e período em meses.
+          Compare cenários de crescimento com uma interface simples, legível e pronta
+          para uso em desktop ou celular.
         </p>
         <form method="get" action="/" aria-describedby="status-descricao">
+          <p id="status-descricao" class="status">${escapeHtml(statusDescription)}</p>
           <fieldset>
             <legend>Dados da simulação</legend>
             <div class="grid">
@@ -401,10 +414,10 @@ function renderHomePage(url: URL): string {
                   inputmode="decimal"
                   placeholder="Ex.: 1000,00"
                   value="${escapeHtml(principalValue)}"
-                  required
                   aria-describedby="principal-ajuda"
+                  required
                 />
-                <small id="principal-ajuda">Informe o valor inicial da aplicação.</small>
+                <p id="principal-ajuda" class="hint">Informe o valor inicial da aplicação.</p>
               </div>
               <div class="field">
                 <label for="taxaMensal">Taxa mensal (%) *</label>
@@ -415,10 +428,10 @@ function renderHomePage(url: URL): string {
                   inputmode="decimal"
                   placeholder="Ex.: 1,50"
                   value="${escapeHtml(monthlyRateValue)}"
-                  required
                   aria-describedby="taxaMensal-ajuda"
+                  required
                 />
-                <small id="taxaMensal-ajuda">Use percentual mensal, com ponto ou vírgula.</small>
+                <p id="taxaMensal-ajuda" class="hint">Use percentual mensal, com ponto ou vírgula.</p>
               </div>
               <div class="field">
                 <label for="meses">Meses *</label>
@@ -429,64 +442,53 @@ function renderHomePage(url: URL): string {
                   inputmode="numeric"
                   placeholder="Ex.: 12"
                   value="${escapeHtml(monthsValue)}"
-                  required
                   aria-describedby="meses-ajuda"
+                  required
                 />
-                <small id="meses-ajuda">Digite apenas números inteiros.</small>
+                <p id="meses-ajuda" class="hint">Digite um número inteiro maior que zero.</p>
               </div>
             </div>
           </fieldset>
-
           <div class="actions">
             <button type="submit">Calcular</button>
-            <p id="status-descricao" class="status">${escapeHtml(statusDescription)}</p>
           </div>
-
-          <section aria-labelledby="titulo-resultado">
-            <h2 id="titulo-resultado">Resultado da simulação</h2>
-            <div class="panel">${resultSection}</div>
-            <div class="panel">${errorSection}</div>
+          <section class="panel" aria-labelledby="resultado-titulo">
+            <h2 id="resultado-titulo">Resultado da simulação</h2>
+            ${resultSection}
+            ${errorSection}
           </section>
         </form>
-        <div class="counter">${escapeHtml(formatCounterMessage(counter.current()))}</div>
       </section>
     </main>
   </body>
 </html>`;
 }
 
-function jsonResponse(body: string, init?: ResponseInit): Response {
-  return new Response(body, {
-    ...init,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-      ...(init?.headers ?? {}),
-    },
-  });
-}
-
-export function handler(request: Request): Response | Promise<Response> {
+export async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
-  if (request.method === "GET" && url.pathname === "/") {
-    return new Response(renderHomePage(url), {
-      status: 200,
+  if (url.pathname === "/health") {
+    return new Response('{"ok":true}', {
       headers: {
-        "content-type": "text/html; charset=utf-8",
+        "content-type": "application/json; charset=utf-8",
       },
     });
   }
 
-  if (request.method === "GET" && url.pathname === "/health") {
-    return jsonResponse(JSON.stringify({ ok: true }), { status: 200 });
+  if (url.pathname === "/api/visits") {
+    const visits = counter.increment();
+    return Response.json({
+      visits,
+      message: formatCounterMessage(visits),
+    });
   }
 
-  if (request.method === "GET" && url.pathname === "/api/visits") {
-    const visits = counter.increment();
-    return jsonResponse(
-      JSON.stringify({ visits, message: formatCounterMessage(visits) }),
-      { status: 200 },
-    );
+  if (url.pathname === "/") {
+    return new Response(renderHomePage(url), {
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
+    });
   }
 
   return new Response("Not Found", { status: 404 });

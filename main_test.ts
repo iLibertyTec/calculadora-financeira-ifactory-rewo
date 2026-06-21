@@ -8,6 +8,10 @@ Deno.test("handler responde /health com status 200 e metadados do serviço", asy
   const response = await handler(new Request("http://localhost/health"));
 
   assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
   assertObjectMatch(await response.json(), {
     ok: true,
     service: "ifactory-product",
@@ -29,11 +33,37 @@ Deno.test("handler calcula juros compostos em POST /api/juros-compostos", async 
   );
 
   assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
   assertObjectMatch(await response.json(), {
     capitalInicial: 1000,
     taxa: 0.1,
     periodos: 2,
     montante: 1210,
+  });
+});
+
+Deno.test("handler retorna 415 sem content-type json em /api/juros-compostos", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      body: JSON.stringify({
+        capitalInicial: 1000,
+        taxa: 0.1,
+        periodos: 2,
+      }),
+    }),
+  );
+
+  assertEquals(response.status, 415);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertObjectMatch(await response.json(), {
+    error: "unsupported media type",
   });
 });
 
@@ -70,6 +100,50 @@ Deno.test("handler retorna 400 para payload inválido em /api/juros-compostos", 
     error: "invalid payload",
     details: {
       taxa: "must be a finite number",
+    },
+  });
+});
+
+Deno.test("handler retorna 400 para campos ausentes em /api/juros-compostos", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        capitalInicial: 1000,
+      }),
+    }),
+  );
+
+  assertEquals(response.status, 400);
+  assertObjectMatch(await response.json(), {
+    error: "invalid payload",
+    details: {
+      taxa: "is required",
+      periodos: "is required",
+    },
+  });
+});
+
+Deno.test("handler retorna 400 para campos extras em /api/juros-compostos", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        capitalInicial: 1000,
+        taxa: 0.1,
+        periodos: 2,
+        extra: true,
+      }),
+    }),
+  );
+
+  assertEquals(response.status, 400);
+  assertObjectMatch(await response.json(), {
+    error: "invalid payload",
+    details: {
+      extra: "is not allowed",
     },
   });
 });

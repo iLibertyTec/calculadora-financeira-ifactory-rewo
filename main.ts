@@ -2,6 +2,13 @@ import { formatCounterMessage, VisitCounter } from "./counter.ts";
 import { calcularJurosCompostos } from "./src/juros_compostos.ts";
 
 const counter = new VisitCounter();
+const JSON_HEADERS: HeadersInit = {
+  "content-type": "application/json; charset=utf-8",
+};
+
+const JUROS_COMPOSTOS_FIELDS = ["capitalInicial", "taxa", "periodos"] as const;
+
+type JurosCompostosField = typeof JUROS_COMPOSTOS_FIELDS[number];
 
 type JurosCompostosPayload = {
   capitalInicial: number;
@@ -19,8 +26,27 @@ type ValidationResult =
     errors: Record<string, string>;
   };
 
+function jsonResponse(body: unknown, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+
+  if (!headers.has("content-type")) {
+    headers.set("content-type", "application/json; charset=utf-8");
+  }
+
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers,
+  });
+}
+
+function hasJsonContentType(req: Request): boolean {
+  const contentType = req.headers.get("content-type");
+
+  return contentType?.toLowerCase().includes("application/json") ?? false;
+}
+
 function validateJurosCompostosPayload(value: unknown): ValidationResult {
-  if (typeof value !== "object" || value === null) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return {
       ok: false,
       errors: {
@@ -32,18 +58,36 @@ function validateJurosCompostosPayload(value: unknown): ValidationResult {
   const payload = value as Record<string, unknown>;
   const errors: Record<string, string> = {};
 
-  if (
+  for (const key of Object.keys(payload)) {
+    if (!JUROS_COMPOSTOS_FIELDS.includes(key as JurosCompostosField)) {
+      errors[key] = "is not allowed";
+    }
+  }
+
+  if (!("capitalInicial" in payload)) {
+    errors.capitalInicial = "is required";
+  } else if (
     typeof payload.capitalInicial !== "number" ||
     !Number.isFinite(payload.capitalInicial)
   ) {
     errors.capitalInicial = "must be a finite number";
   }
 
-  if (typeof payload.taxa !== "number" || !Number.isFinite(payload.taxa)) {
+  if (!("taxa" in payload)) {
+    errors.taxa = "is required";
+  } else if (
+    typeof payload.taxa !== "number" ||
+    !Number.isFinite(payload.taxa)
+  ) {
     errors.taxa = "must be a finite number";
   }
 
-  if (typeof payload.periodos !== "number" || !Number.isFinite(payload.periodos)) {
+  if (!("periodos" in payload)) {
+    errors.periodos = "is required";
+  } else if (
+    typeof payload.periodos !== "number" ||
+    !Number.isFinite(payload.periodos)
+  ) {
     errors.periodos = "must be a finite number";
   } else if (!Number.isInteger(payload.periodos)) {
     errors.periodos = "must be an integer";
@@ -59,9 +103,9 @@ function validateJurosCompostosPayload(value: unknown): ValidationResult {
   return {
     ok: true,
     payload: {
-      capitalInicial: payload.capitalInicial,
-      taxa: payload.taxa,
-      periodos: payload.periodos,
+      capitalInicial: payload.capitalInicial as number,
+      taxa: payload.taxa as number,
+      periodos: payload.periodos as number,
     },
   };
 }
@@ -70,7 +114,7 @@ export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
   if (url.pathname === "/health") {
-    return Response.json({
+    return jsonResponse({
       ok: true,
       service: "ifactory-product",
       version: "0.1.0",
@@ -79,20 +123,30 @@ export async function handler(req: Request): Promise<Response> {
 
   if (url.pathname === "/api/juros-compostos") {
     if (req.method === "POST") {
+      if (!hasJsonContentType(req)) {
+        return jsonResponse(
+          { error: "unsupported media type" },
+          { status: 415, headers: JSON_HEADERS },
+        );
+      }
+
       let body: unknown;
 
       try {
         body = await req.json();
       } catch {
-        return Response.json({ error: "invalid json" }, { status: 400 });
+        return jsonResponse(
+          { error: "invalid json" },
+          { status: 400, headers: JSON_HEADERS },
+        );
       }
 
       const validation = validateJurosCompostosPayload(body);
 
       if (!validation.ok) {
-        return Response.json(
+        return jsonResponse(
           { error: "invalid payload", details: validation.errors },
-          { status: 400 },
+          { status: 400, headers: JSON_HEADERS },
         );
       }
 
@@ -103,25 +157,28 @@ export async function handler(req: Request): Promise<Response> {
         periodos,
       );
 
-      return Response.json({
+      return jsonResponse({
         capitalInicial,
         taxa,
         periodos,
         montante,
-      });
+      }, { headers: JSON_HEADERS });
     }
 
-    return Response.json(
+    return jsonResponse(
       { error: "method not allowed" },
       {
         status: 405,
-        headers: { "allow": "POST" },
+        headers: {
+          ...JSON_HEADERS,
+          "allow": "POST",
+        },
       },
     );
   }
 
   if (url.pathname === "/api/visits" && req.method === "GET") {
-    return Response.json(counter.state);
+    return jsonResponse(counter.state);
   }
 
   if (url.pathname === "/api/visits" && req.method === "POST") {
@@ -132,7 +189,7 @@ export async function handler(req: Request): Promise<Response> {
       ? body.visitorId
       : undefined;
     const state = counter.recordVisit(visitorId);
-    return Response.json({
+    return jsonResponse({
       ...state,
       message: formatCounterMessage(state),
     });
@@ -172,7 +229,7 @@ refresh();
     });
   }
 
-  return Response.json({ error: "not found" }, { status: 404 });
+  return jsonResponse({ error: "not found" }, { status: 404 });
 }
 
 if (import.meta.main) {

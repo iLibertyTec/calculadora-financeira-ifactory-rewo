@@ -12,6 +12,12 @@ export type JurosCompostosRequestResult =
   | { success: true; data: JurosCompostosInput }
   | { success: false; error: string };
 
+const JUROS_COMPOSTOS_FIELDS: readonly string[] = [
+  "principal",
+  "taxaMensal",
+  "meses",
+];
+
 export async function readJurosCompostosRequest(
   req: Request,
 ): Promise<JurosCompostosRequestResult> {
@@ -24,10 +30,19 @@ export async function readJurosCompostosRequest(
     };
   }
 
+  const rawBody: string = await req.text();
+
+  if (rawBody.trim() === "") {
+    return {
+      success: false,
+      error: "O corpo da requisição não pode estar vazio.",
+    };
+  }
+
   let body: unknown;
 
   try {
-    body = await req.json();
+    body = JSON.parse(rawBody) as unknown;
   } catch {
     return {
       success: false,
@@ -35,14 +50,24 @@ export async function readJurosCompostosRequest(
     };
   }
 
-  if (typeof body !== "object" || body === null) {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
     return {
       success: false,
-      error: "Os campos principal, taxaMensal e meses são obrigatórios.",
+      error: "O corpo da requisição deve ser um objeto JSON.",
     };
   }
 
   const payload: Record<string, unknown> = body as Record<string, unknown>;
+  const extraFields: string[] = Object.keys(payload).filter((key: string) => {
+    return !JUROS_COMPOSTOS_FIELDS.includes(key);
+  });
+
+  if (extraFields.length > 0) {
+    return {
+      success: false,
+      error: `Campo(s) desconhecido(s): ${extraFields.join(", ")}.`,
+    };
+  }
 
   if (!("principal" in payload)) {
     return {
@@ -78,11 +103,12 @@ export async function readJurosCompostosRequest(
 
   if (
     typeof payload.taxaMensal !== "number" ||
-    !Number.isFinite(payload.taxaMensal)
+    !Number.isFinite(payload.taxaMensal) ||
+    payload.taxaMensal < 0
   ) {
     return {
       success: false,
-      error: "O campo taxaMensal deve ser um número finito.",
+      error: "O campo taxaMensal deve ser um número finito maior ou igual a zero.",
     };
   }
 

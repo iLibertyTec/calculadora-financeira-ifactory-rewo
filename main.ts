@@ -20,6 +20,16 @@ type ValidationResult =
     errors: Record<string, string>;
   };
 
+type VisitsState = {
+  visits: number;
+  uniqueVisitors: number;
+};
+
+const visitsState: VisitsState = {
+  visits: 0,
+  uniqueVisitors: 0,
+};
+
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
   const headers: Headers = new Headers(init?.headers);
 
@@ -270,154 +280,121 @@ function renderHomePage(): string {
 
       code,
       pre {
-        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
       }
 
       pre {
         margin: 16px 0 0;
-        padding: 16px;
+        padding: 18px;
         overflow-x: auto;
-        border-radius: 14px;
+        border-radius: 16px;
         background: var(--code-bg);
-        border: 1px solid var(--panel-border);
+        border: 1px solid rgba(124, 178, 255, 0.2);
+        color: var(--text);
       }
 
-      .result {
+      .note {
         margin-top: 14px;
-        padding: 14px 16px;
-        border-left: 4px solid var(--accent-strong);
-        border-radius: 12px;
-        background: rgba(76, 141, 255, 0.1);
-      }
-
-      .section + .section {
-        margin-top: 24px;
+        font-size: 0.95rem;
       }
     </style>
   </head>
   <body>
     <a class="skip-link" href="#conteudo-principal">Pular para o conteúdo principal</a>
-    <main id="conteudo-principal">
+    <main id="conteudo-principal" tabindex="-1">
       <section class="hero" aria-labelledby="titulo-principal">
-        <span class="eyebrow">PoC iFactory</span>
+        <span class="eyebrow">iFactory</span>
         <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
         <p>
-          Uma página inicial simples para apresentar a API de cálculo de juros compostos,
-          explicar seu uso e demonstrar um resultado esperado sem depender de chamadas
-          automáticas no carregamento da home.
+          Uma API simples para demonstrar cálculos de juros compostos com validação
+          de entrada e respostas em JSON, pronta para testes, integração e evolução.
         </p>
-        <a class="cta" href="#api">Ver exemplo da API</a>
+        <a class="cta" href="#como-usar">Ver como usar</a>
       </section>
 
-      <section class="section" aria-labelledby="como-funciona">
-        <h2 id="como-funciona">Como funciona</h2>
+      <section class="section" id="como-usar" aria-labelledby="subtitulo-como-usar">
+        <h2 id="subtitulo-como-usar">Como usar</h2>
         <div class="steps">
-          <article class="step">
+          <div class="step">
             <h3>1. Envie os dados</h3>
-            <p>Informe capital inicial, taxa e quantidade de períodos em JSON.</p>
-          </article>
-          <article class="step">
+            <p>Informe <code>capitalInicial</code>, <code>taxa</code> e <code>periodos</code> em JSON.</p>
+          </div>
+          <div class="step">
             <h3>2. Chame a API</h3>
-            <p>Use o endpoint <code>POST /api/juros-compostos</code> para processar o cálculo.</p>
-          </article>
-          <article class="step">
+            <p>Faça uma requisição <code>POST /api/juros-compostos</code> com <code>content-type: application/json</code>.</p>
+          </div>
+          <div class="step">
             <h3>3. Receba o montante</h3>
-            <p>A resposta retorna os dados de entrada e o valor final calculado.</p>
-          </article>
+            <p>A resposta retorna os dados informados e o valor calculado de <code>montante</code>.</p>
+          </div>
         </div>
       </section>
 
-      <section class="section" aria-labelledby="demonstracao">
-        <h2 id="demonstracao">Demonstração informativa</h2>
-        <p>
-          O exemplo abaixo é estático e serve apenas para ilustrar a operação da API na home.
-          Nenhum formulário é enviado automaticamente nesta página.
-        </p>
-        <pre><code>POST /api/juros-compostos
-Content-Type: application/json
+      <div class="grid">
+        <section class="section" aria-labelledby="subtitulo-exemplo">
+          <h2 id="subtitulo-exemplo">Exemplo de requisição</h2>
+          <pre>POST /api/juros-compostos
+content-type: application/json
 
 {
   "capitalInicial": 1000,
   "taxa": 0.1,
   "periodos": 2
-}</code></pre>
-        <div class="result" role="status" aria-live="polite">
-          Exemplo de retorno: montante = 1210
-        </div>
-      </section>
+}</pre>
+          <p class="note">O exemplo abaixo é estático e serve apenas para ilustrar a operação da API na home.</p>
+        </section>
 
-      <section class="section" id="api" aria-labelledby="integracao-api">
-        <h2 id="integracao-api">Integração da API</h2>
-        <div class="grid">
-          <article class="card">
-            <h3>Saúde do serviço</h3>
-            <p>Consulte <code>GET /health</code> para verificar disponibilidade e versão.</p>
-          </article>
-          <article class="card">
-            <h3>Contrato principal</h3>
-            <p>O endpoint <code>POST /api/juros-compostos</code> continua disponível para integrações.</p>
-          </article>
-          <article class="card">
-            <h3>Compatibilidade</h3>
-            <p>Os endpoints legados de contagem de visitas permanecem ativos, embora não sejam exibidos na home.</p>
-          </article>
-        </div>
-      </section>
+        <section class="section" aria-labelledby="subtitulo-retorno">
+          <h2 id="subtitulo-retorno">Exemplo de resposta</h2>
+          <pre>{
+  "capitalInicial": 1000,
+  "taxa": 0.1,
+  "periodos": 2,
+  "montante": 1210
+}</pre>
+          <p class="note">Neste cenário, o montante = 1210 após aplicar juros compostos por 2 períodos.</p>
+        </section>
+      </div>
     </main>
   </body>
 </html>`;
 }
 
-function getVisitCount(): number {
-  return 0;
-}
-
-async function handleVisits(req: Request): Promise<Response> {
-  if (req.method === "GET") {
-    return jsonResponse({ count: getVisitCount() });
-  }
-
-  if (req.method === "POST") {
-    return jsonResponse({ count: getVisitCount() + 1 });
-  }
-
-  return jsonResponse(
-    { error: "method not allowed" },
-    {
-      status: 405,
-      headers: {
-        allow: "GET, POST",
-      },
-    },
-  );
+function getVisitsResponseBody(): {
+  visits: number;
+  uniqueVisitors: number;
+  message: string;
+} {
+  return {
+    visits: visitsState.visits,
+    uniqueVisitors: visitsState.uniqueVisitors,
+    message: "Visit registered successfully",
+  };
 }
 
 export async function handler(req: Request): Promise<Response> {
   const url: URL = new URL(req.url);
 
   if (url.pathname === "/") {
-    if (req.method === "GET" || req.method === "HEAD") {
-      return htmlResponse(req.method === "HEAD" ? "" : renderHomePage());
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      return jsonResponse(
+        { error: "method not allowed" },
+        { status: 405, headers: { allow: "GET, HEAD" } },
+      );
     }
 
-    return htmlResponse("Método não permitido", {
-      status: 405,
-      headers: {
-        allow: "GET, HEAD",
-      },
-    });
+    if (req.method === "HEAD") {
+      return htmlResponse("", { status: 200 });
+    }
+
+    return htmlResponse(renderHomePage());
   }
 
   if (url.pathname === "/health") {
     if (req.method !== "GET") {
       return jsonResponse(
         { error: "method not allowed" },
-        {
-          status: 405,
-          headers: {
-            allow: "GET",
-          },
-        },
+        { status: 405, headers: { allow: "GET" } },
       );
     }
 
@@ -429,19 +406,27 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   if (url.pathname === "/api/visits") {
-    return await handleVisits(req);
+    if (req.method === "GET") {
+      return jsonResponse(getVisitsResponseBody());
+    }
+
+    if (req.method === "POST") {
+      visitsState.visits += 1;
+      visitsState.uniqueVisitors += 1;
+      return jsonResponse(getVisitsResponseBody());
+    }
+
+    return jsonResponse(
+      { error: "method not allowed" },
+      { status: 405, headers: { allow: "GET, POST" } },
+    );
   }
 
   if (url.pathname === "/api/juros-compostos") {
     if (req.method !== "POST") {
       return jsonResponse(
         { error: "method not allowed" },
-        {
-          status: 405,
-          headers: {
-            allow: "POST",
-          },
-        },
+        { status: 405, headers: { allow: "POST" } },
       );
     }
 
@@ -468,26 +453,29 @@ export async function handler(req: Request): Promise<Response> {
     if (!validation.ok) {
       return jsonResponse(
         {
-          error: "invalid payload",
-          details: validation.errors,
+          error: "validation failed",
+          fields: validation.errors,
         },
         { status: 400 },
       );
     }
 
+    const { capitalInicial, taxa, periodos } = validation.payload;
     const montante: number = calcularJurosCompostos(
-      validation.payload.capitalInicial,
-      validation.payload.taxa,
-      validation.payload.periodos,
+      capitalInicial,
+      taxa,
+      periodos,
     );
 
     return jsonResponse({
-      ...validation.payload,
+      capitalInicial,
+      taxa,
+      periodos,
       montante,
     });
   }
 
-  return new Response("Not Found", { status: 404 });
+  return jsonResponse({ error: "not found" }, { status: 404 });
 }
 
 if (import.meta.main) {

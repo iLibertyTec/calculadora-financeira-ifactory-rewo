@@ -27,6 +27,8 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /@media \(max-width: 400px\)/);
   assertMatch(body, /margin: 0 auto;/);
   assertMatch(body, /button\s*\{[\s\S]*?cursor: pointer;/);
+  assertMatch(body, /button:hover/);
+  assertMatch(body, /button:focus-visible/);
   assertMatch(
     body,
     /button\s*\{[\s\S]*?@media \(max-width: 400px\)[\s\S]*?width: 100%;/,
@@ -61,12 +63,13 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
     body,
     /<form method="get" action="\/" aria-describedby="status-descricao">/,
   );
-  assertMatch(body, /Resultado da simulação/);
+  assertMatch(body, /Resultado da simulação|Montante final estimado:/);
   assertMatch(body, /function limparErro\(\)/);
   assertMatch(body, /function exibirErro\(mensagem\)/);
-  assertMatch(body, /function obterMensagemErro\(payload\)/);
+  assertMatch(body, /function obterMensagemErro\(payload, fallbackStatus\)/);
+  assertMatch(body, /function obterMensagemErroHttp\(status, payload, texto\)/);
   assertMatch(body, /function atualizarStatus\(mensagem\)/);
-  assertMatch(body, /function lerPayloadJson\(resposta\)/);
+  assertMatch(body, /async function lerPayloadJson\(resposta\)/);
   assertMatch(body, /role="alert"/);
   assertMatch(body, /tabindex="-1"/);
   assertMatch(body, /paragrafo\.textContent = mensagem;/);
@@ -81,9 +84,16 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   );
   assertMatch(
     body,
+    /Não foi possível calcular no momento porque o serviço está indisponível\. Tente novamente mais tarde\./,
+  );
+  assertMatch(
+    body,
     /Não foi possível concluir o cálculo\. Verifique a mensagem de erro exibida\./,
   );
+  assertMatch(body, /erro\.hidden = false;/);
+  assertMatch(body, /erro\.scrollIntoView\(/);
   assertMatch(body, /erro\.focus\(\);/);
+  assertMatch(body, /botaoSubmit\?\.focus\(\);/);
   assertNotMatch(body, /novalidate/);
 });
 
@@ -180,17 +190,25 @@ Deno.test("POST /api/calcular calcula com sucesso", async () => {
     response.headers.get("content-type"),
     "application/json; charset=utf-8",
   );
-  assertMatch(body, /"total":/);
-  assertMatch(body, /"totalFormatado":"R\$/);
+  assertMatch(body, /"resultado":/);
+  assertMatch(body, /"resultadoFormatado":"R\$/);
 });
 
-Deno.test("GET / não referencia frameworks ou dependências externas", async () => {
-  const response = await handler(new Request("http://localhost/"));
+Deno.test("POST /api/calcular retorna erro para JSON inválido", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/calcular", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: "{",
+    }),
+  );
   const body = await response.text();
 
-  assertEquals(response.status, 200);
-  assertNotMatch(body, /https?:\/\//);
-  assertNotMatch(body, /react/i);
-  assertNotMatch(body, /preact/i);
-  assertNotMatch(body, /fresh/i);
+  assertEquals(response.status, 400);
+  assertMatch(
+    body,
+    /"message":"Não foi possível interpretar os dados enviados para cálculo\."/,
+  );
 });

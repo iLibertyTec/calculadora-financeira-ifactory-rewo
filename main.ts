@@ -26,6 +26,28 @@ function validarCampoNumerico(
   return valor;
 }
 
+function validarRegrasDeDominio(
+  payload: JurosCompostosPayload,
+): JurosCompostosPayload {
+  if (payload.principal < 0) {
+    throw new RangeError("principal não pode ser negativo.");
+  }
+
+  if (payload.taxaMensal < 0) {
+    throw new RangeError("taxaMensal não pode ser negativa.");
+  }
+
+  if (payload.meses < 0) {
+    throw new RangeError("meses não pode ser negativo.");
+  }
+
+  if (!Number.isInteger(payload.meses)) {
+    throw new RangeError("meses deve ser um número inteiro.");
+  }
+
+  return payload;
+}
+
 function parseJurosCompostosPayload(body: unknown): JurosCompostosPayload {
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     throw new TypeError("Corpo da requisição deve ser um objeto JSON.");
@@ -33,11 +55,11 @@ function parseJurosCompostosPayload(body: unknown): JurosCompostosPayload {
 
   const payload = body as Record<string, unknown>;
 
-  return {
+  return validarRegrasDeDominio({
     principal: validarCampoNumerico(payload.principal, "principal"),
     taxaMensal: validarCampoNumerico(payload.taxaMensal, "taxaMensal"),
     meses: validarCampoNumerico(payload.meses, "meses"),
-  };
+  });
 }
 
 function arredondarTresCasas(valor: number): number {

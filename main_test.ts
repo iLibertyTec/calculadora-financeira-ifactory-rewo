@@ -55,6 +55,63 @@ Deno.test("POST /api/juros-compostos responde 400 para dados inválidos", async 
   assertEquals(body.error, "principal não pode ser negativo.");
 });
 
+Deno.test("POST /api/juros-compostos responde 400 para taxa negativa", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        principal: 1000,
+        taxaMensal: -2,
+        meses: 3,
+      }),
+    }),
+  );
+
+  const body = await response.json();
+
+  assertEquals(response.status, 400);
+  assertEquals(body.error, "taxaMensal não pode ser negativa.");
+});
+
+Deno.test("POST /api/juros-compostos responde 400 para meses negativo", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        principal: 1000,
+        taxaMensal: 2,
+        meses: -3,
+      }),
+    }),
+  );
+
+  const body = await response.json();
+
+  assertEquals(response.status, 400);
+  assertEquals(body.error, "meses não pode ser negativo.");
+});
+
+Deno.test("POST /api/juros-compostos responde 400 para meses decimal", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        principal: 1000,
+        taxaMensal: 2,
+        meses: 1.5,
+      }),
+    }),
+  );
+
+  const body = await response.json();
+
+  assertEquals(response.status, 400);
+  assertEquals(body.error, "meses deve ser um número inteiro.");
+});
+
 Deno.test("POST /api/juros-compostos responde 400 para campo ausente", async () => {
   const response = await handler(
     new Request("http://localhost/api/juros-compostos", {

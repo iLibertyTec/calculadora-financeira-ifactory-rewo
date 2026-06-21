@@ -2,6 +2,184 @@ import { formatCounterMessage, VisitCounter } from "./counter.ts";
 
 const counter = new VisitCounter();
 
+function renderHomePage(): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calculadora Financeira iFactory</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f7fb;
+        --panel: #ffffff;
+        --ink: #162033;
+        --muted: #5b657a;
+        --border: #d8deea;
+        --accent: #1d4ed8;
+        --error-bg: #fef2f2;
+        --error-ink: #b91c1c;
+        --result-bg: #eff6ff;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+      }
+
+      main {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .card {
+        width: 100%;
+        max-width: 640px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+        box-shadow: 0 10px 30px rgba(22, 32, 51, 0.08);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+      }
+
+      p {
+        margin: 0 0 24px;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      form {
+        display: grid;
+        gap: 16px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
+      }
+
+      label {
+        font-weight: 700;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        font: inherit;
+      }
+
+      button {
+        padding: 14px 18px;
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #ffffff;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      #resultado,
+      #erro {
+        margin-top: 24px;
+        padding: 16px;
+        border-radius: 12px;
+      }
+
+      #resultado {
+        background: var(--result-bg);
+      }
+
+      #erro {
+        background: var(--error-bg);
+        color: var(--error-ink);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="card" aria-labelledby="titulo-principal">
+        <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
+        <p>
+          Informe os dados abaixo para calcular uma simulação financeira com
+          valor principal, taxa mensal e prazo em meses.
+        </p>
+
+        <form method="post" action="#" aria-describedby="descricao-formulario">
+          <span id="descricao-formulario" hidden>
+            Formulário para cálculo financeiro.
+          </span>
+
+          <div class="field">
+            <label for="principal">Valor principal</label>
+            <input
+              id="principal"
+              name="principal"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="0.01"
+              placeholder="Ex.: 1000,00"
+            />
+          </div>
+
+          <div class="field">
+            <label for="taxaMensal">Taxa mensal (%)</label>
+            <input
+              id="taxaMensal"
+              name="taxaMensal"
+              type="number"
+              inputmode="decimal"
+              step="0.01"
+              placeholder="Ex.: 1,50"
+            />
+          </div>
+
+          <div class="field">
+            <label for="meses">Meses</label>
+            <input
+              id="meses"
+              name="meses"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              step="1"
+              placeholder="Ex.: 12"
+            />
+          </div>
+
+          <button type="submit">Calcular</button>
+        </form>
+
+        <section id="resultado" aria-live="polite" aria-label="Resultado">
+          Resultado da simulação aparecerá aqui.
+        </section>
+
+        <section id="erro" aria-live="polite" aria-label="Mensagens de erro">
+          Nenhuma mensagem de erro no momento.
+        </section>
+      </section>
+    </main>
+  </body>
+</html>`;
+}
+
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
@@ -32,35 +210,7 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   if (url.pathname === "/") {
-    const html = `<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>iFactory Product — Visit Analytics</title>
-<style>
-:root{--bg:#080b17;--panel:#141b34;--ink:#eaeefa;--mut:#8b95b8;--accent:#4c8dff}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:grid;place-items:center}
-.card{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:36px;text-align:center;max-width:420px;width:90%}
-h1{font-size:1.35rem;margin-bottom:8px}
-p{color:var(--mut);font-size:.9rem;margin-bottom:20px}
-#count{font-size:3rem;font-weight:700;color:var(--accent);margin:12px 0}
-button{background:var(--accent);color:#fff;border:none;padding:12px 24px;border-radius:10px;font-weight:600;cursor:pointer}
-.badge{display:inline-block;margin-top:16px;font-size:.75rem;color:var(--mut)}
-</style></head>
-<body><div class="card">
-<h1>Visit Analytics</h1>
-<p>Evolved by the iFactory autonomous team.</p>
-<div id="count">0</div>
-<p id="msg"></p>
-<button id="btn">Registrar visita</button>
-<div class="badge">iFactory Product · Deno Deploy</div>
-</div>
-<script>
-const countEl=document.getElementById('count'),msgEl=document.getElementById('msg');
-async function refresh(){const r=await fetch('/api/visits');const d=await r.json();countEl.textContent=d.visits;msgEl.textContent=d.lastVisitor?'Último: '+d.lastVisitor:''}
-document.getElementById('btn').onclick=async()=>{await fetch('/api/visits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitorId:'browser'})});refresh()};
-refresh();
-</script></body></html>`;
-    return new Response(html, {
+    return new Response(renderHomePage(), {
       headers: { "content-type": "text/html; charset=utf-8" },
     });
   }

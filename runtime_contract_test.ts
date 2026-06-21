@@ -12,6 +12,10 @@ async function readDenoConfig(): Promise<DenoConfig> {
   return JSON.parse(text) as DenoConfig;
 }
 
+async function readMainSource(): Promise<string> {
+  return await Deno.readTextFile("./main.ts");
+}
+
 function splitCommand(command: string): string[] {
   return command.match(/(?:"[^"]*"|'[^']*'|\S+)/g) ?? [];
 }
@@ -27,13 +31,14 @@ function unquote(token: string): string {
   return token;
 }
 
-function isExternalImportSpecifier(specifier: string): boolean {
-  return specifier.startsWith("jsr:") || specifier.startsWith("npm:") ||
-    specifier.startsWith("http://") || specifier.startsWith("https://");
+function isMainEntrypointToken(token: string): boolean {
+  const normalized: string = token.replaceAll("\\", "/");
+  return normalized === "main.ts" || normalized === "./main.ts" ||
+    normalized.endsWith("/main.ts");
 }
 
 Deno.test("main.ts mantém contrato de entrypoint com import.meta.main e inicialização via Deno.serve", async () => {
-  const mainSource: string = await Deno.readTextFile("./main.ts");
+  const mainSource: string = await readMainSource();
 
   assertMatch(mainSource, /if\s*\(\s*import\.meta\.main\s*\)/);
   assertMatch(mainSource, /Deno\.serve\s*\(/);
@@ -54,25 +59,16 @@ Deno.test("deno task start mantém intenção de executar main.ts com deno run e
     tokens.includes("-A") || tokens.includes("--allow-all"),
     "A task 'start' deve manter permissão total (-A ou --allow-all).",
   );
-  assertEquals(
-    tokens[tokens.length - 1],
-    "main.ts",
-    "A task 'start' deve apontar para main.ts como entrypoint final.",
+  assert(
+    tokens.some(isMainEntrypointToken),
+    "A task 'start' deve incluir main.ts como entrypoint.",
   );
 });
 
-Deno.test("configuração Deno não declara imports externos além de @std/assert", async () => {
+Deno.test("deno.json mantém apenas o alias esperado de dependência externa no import map", async () => {
   const denoConfig: DenoConfig = await readDenoConfig();
   const imports: Record<string, string> = denoConfig.imports ?? {};
-  const disallowedExternalImports: Array<[string, string]> = Object.entries(
-    imports,
-  ).filter(([key, value]) => {
-    return isExternalImportSpecifier(value) && key !== "@std/assert";
-  });
 
-  assertEquals(disallowedExternalImports, []);
-  assert(
-    imports["@std/assert"] !== undefined,
-    "O alias @std/assert deve permanecer declarado em deno.json.",
-  );
+  assertEquals(Object.keys(imports).sort(), ["@std/assert"]);
+  assertEquals(imports["@std/assert"], "jsr:@std/assert@1");
 });

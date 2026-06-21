@@ -1,7 +1,4 @@
-import { formatCounterMessage, VisitCounter } from "./counter.ts";
 import { calcularJurosCompostos } from "./src/juros_compostos.ts";
-
-const counter: VisitCounter = new VisitCounter();
 
 const JUROS_COMPOSTOS_FIELDS = ["capitalInicial", "taxa", "periodos"] as const;
 
@@ -151,11 +148,35 @@ function renderHomePage(): string {
         box-sizing: border-box;
       }
 
+      html {
+        scroll-behavior: smooth;
+      }
+
       body {
         margin: 0;
         font-family: system-ui, sans-serif;
         background: linear-gradient(180deg, #0b1020 0%, #121a30 100%);
         color: var(--text);
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .skip-link {
+        position: absolute;
+        left: 16px;
+        top: -48px;
+        background: var(--accent-strong);
+        color: white;
+        padding: 10px 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        z-index: 10;
+      }
+
+      .skip-link:focus {
+        top: 16px;
       }
 
       main {
@@ -188,7 +209,8 @@ function renderHomePage(): string {
       }
 
       h1,
-      h2 {
+      h2,
+      h3 {
         margin: 0 0 12px;
         line-height: 1.2;
       }
@@ -201,8 +223,13 @@ function renderHomePage(): string {
         font-size: 1.3rem;
       }
 
+      h3 {
+        font-size: 1.05rem;
+      }
+
       p,
-      li {
+      li,
+      label {
         color: var(--muted);
         line-height: 1.6;
       }
@@ -214,13 +241,44 @@ function renderHomePage(): string {
         margin-top: 24px;
       }
 
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .step,
+      .card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 18px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: var(--accent-strong);
+        color: white;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
       ul {
         margin: 0;
         padding-left: 20px;
       }
 
       code,
-      pre {
+      pre,
+      input,
+      button,
+      output {
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
           "Liberation Mono", "Courier New", monospace;
       }
@@ -242,52 +300,148 @@ function renderHomePage(): string {
         color: var(--text);
       }
 
+      form {
+        display: grid;
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid var(--panel-border);
+        background: #0a1327;
+        color: var(--text);
+      }
+
+      button {
+        width: fit-content;
+        padding: 12px 16px;
+        border: 0;
+        border-radius: 12px;
+        background: var(--accent-strong);
+        color: white;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      output {
+        display: block;
+        margin-top: 16px;
+        padding: 16px;
+        border-radius: 14px;
+        background: #0a1327;
+        border: 1px solid var(--panel-border);
+        color: var(--text);
+        white-space: pre-wrap;
+      }
+
       .section + .section {
         margin-top: 24px;
       }
     </style>
   </head>
   <body>
-    <main>
+    <a class="skip-link" href="#conteudo-principal">Pular para o conteúdo principal</a>
+    <main id="conteudo-principal">
       <section class="hero" aria-labelledby="titulo-principal">
         <span class="eyebrow">iFactory</span>
         <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
         <p>
-          API simples para cálculo de juros compostos, pronta para testes,
-          integração com front-end e automações internas.
+          Serviço para cálculo de juros compostos com uma interface inicial clara,
+          acessível e pronta para demonstração. Use a home para entender o fluxo,
+          testar o exemplo e integrar sua aplicação com o endpoint principal.
         </p>
+        <a class="cta" href="#demo-api" aria-describedby="descricao-cta-api">
+          Testar fluxo da calculadora
+        </a>
+        <p id="descricao-cta-api">
+          Endpoint principal: <code>POST /api/juros-compostos</code>
+        </p>
+        <div class="steps" aria-label="Fluxo principal de uso">
+          <div class="step">
+            <h2>1. Informe os dados</h2>
+            <p>Capital inicial, taxa por período e quantidade de períodos.</p>
+          </div>
+          <div class="step">
+            <h2>2. Envie para a API</h2>
+            <p>Faça uma requisição JSON para <code>/api/juros-compostos</code>.</p>
+          </div>
+          <div class="step">
+            <h2>3. Receba o montante</h2>
+            <p>A resposta retorna os dados enviados e o valor final calculado.</p>
+          </div>
+        </div>
       </section>
 
-      <div class="grid">
-        <section class="section" aria-labelledby="como-usar">
-          <h2 id="como-usar">Como usar</h2>
-          <ul>
-            <li>Envie requisições <code>POST</code> para <code>/api/juros-compostos</code>.</li>
-            <li>Informe <code>capitalInicial</code>, <code>taxa</code> e <code>periodos</code>.</li>
-            <li>Receba o <code>montante</code> calculado com juros compostos.</li>
-          </ul>
-        </section>
-
-        <section class="section" aria-labelledby="casos-de-uso">
-          <h2 id="casos-de-uso">Casos de uso</h2>
-          <ul>
-            <li>Simulações financeiras rápidas em aplicações internas.</li>
-            <li>Validação de cenários de investimento e projeções.</li>
-            <li>Integração com formulários, dashboards e workflows automatizados.</li>
-          </ul>
-        </section>
-      </div>
-
-      <section class="section" aria-labelledby="exemplo-api">
-        <h2 id="exemplo-api">Exemplo de requisição</h2>
+      <section class="section" aria-labelledby="demo-api">
+        <h2 id="demo-api">Demonstração visível do cálculo</h2>
         <p>
-          Faça um <code>POST</code> para <code>/api/juros-compostos</code> com JSON.
+          Exemplo de uso com <code>capitalInicial = 1000</code>,
+          <code>taxa = 0.1</code> e <code>periodos = 2</code>. O resultado esperado
+          é <code>1210</code>.
         </p>
-        <pre>{
+        <form aria-label="Exemplo de cálculo de juros compostos">
+          <div class="form-grid">
+            <label>
+              Capital inicial
+              <input type="number" value="1000" readonly>
+            </label>
+            <label>
+              Taxa
+              <input type="number" value="0.1" readonly>
+            </label>
+            <label>
+              Períodos
+              <input type="number" value="2" readonly>
+            </label>
+          </div>
+          <button type="button" aria-disabled="true">Calcular via API</button>
+          <output aria-label="Resultado esperado do cálculo">
+montante = 1210
+endpoint = POST /api/juros-compostos
+          </output>
+        </form>
+      </section>
+
+      <section class="section" aria-labelledby="integracao-api">
+        <h2 id="integracao-api">Integração rápida</h2>
+        <div class="grid">
+          <div class="card">
+            <h3>Payload esperado</h3>
+            <pre>{
   "capitalInicial": 1000,
   "taxa": 0.1,
   "periodos": 2
 }</pre>
+          </div>
+          <div class="card">
+            <h3>Exemplo com fetch</h3>
+            <pre>fetch("/api/juros-compostos", {
+  method: "POST",
+  headers: {
+    "content-type": "application/json"
+  },
+  body: JSON.stringify({
+    capitalInicial: 1000,
+    taxa: 0.1,
+    periodos: 2
+  })
+});</pre>
+          </div>
+        </div>
       </section>
     </main>
   </body>
@@ -297,11 +451,11 @@ function renderHomePage(): string {
 export async function handler(req: Request): Promise<Response> {
   const url: URL = new URL(req.url);
 
-  if (req.method === "GET" && url.pathname === "/") {
-    return htmlResponse(renderHomePage());
+  if (url.pathname === "/" && (req.method === "GET" || req.method === "HEAD")) {
+    return htmlResponse(req.method === "HEAD" ? "" : renderHomePage());
   }
 
-  if (req.method === "GET" && url.pathname === "/health") {
+  if (url.pathname === "/health" && req.method === "GET") {
     return jsonResponse({
       ok: true,
       service: "ifactory-product",
@@ -309,17 +463,21 @@ export async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (req.method === "GET" && url.pathname === "/api/visits") {
-    const visits: number = counter.increment();
+  if (url.pathname === "/api/juros-compostos") {
+    if (req.method !== "POST") {
+      return jsonResponse(
+        {
+          error: "method not allowed",
+        },
+        {
+          status: 405,
+          headers: {
+            allow: "POST",
+          },
+        },
+      );
+    }
 
-    return jsonResponse({
-      message: formatCounterMessage(visits),
-      totalVisits: visits,
-      visits,
-    });
-  }
-
-  if (req.method === "POST" && url.pathname === "/api/juros-compostos") {
     if (!hasJsonContentType(req)) {
       return jsonResponse(
         {
@@ -354,17 +512,14 @@ export async function handler(req: Request): Promise<Response> {
       );
     }
 
-    const { capitalInicial, taxa, periodos } = validation.payload;
-    const montante: number = calcularJurosCompostos({
-      capitalInicial,
-      taxa,
-      periodos,
-    });
+    const montante: number = calcularJurosCompostos(
+      validation.payload.capitalInicial,
+      validation.payload.taxa,
+      validation.payload.periodos,
+    );
 
     return jsonResponse({
-      capitalInicial,
-      taxa,
-      periodos,
+      ...validation.payload,
       montante,
     });
   }

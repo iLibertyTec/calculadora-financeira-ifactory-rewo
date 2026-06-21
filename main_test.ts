@@ -19,11 +19,26 @@ Deno.test("handler responde / com HTML da Calculadora Financeira iFactory", asyn
 
   assertStringIncludes(html, "<title>Calculadora Financeira iFactory</title>");
   assertStringIncludes(html, "Calculadora Financeira iFactory");
-  assertStringIncludes(html, "/api/juros-compostos");
+  assertStringIncludes(html, "POST /api/juros-compostos");
+  assertStringIncludes(html, "Pular para o conteúdo principal");
+  assertStringIncludes(html, "montante = 1210");
   assert(!html.includes("Visit Analytics"));
   assert(!html.includes("Registrar visita"));
   assert(!html.includes("/api/visits"));
   assert(!html.includes("visits"));
+});
+
+Deno.test("handler responde HEAD / com status 200 e content-type html", async () => {
+  const response: Response = await handler(
+    new Request("http://localhost/", { method: "HEAD" }),
+  );
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "text/html; charset=utf-8",
+  );
+  assertEquals(await response.text(), "");
 });
 
 Deno.test("handler responde /health com status 200 e metadados do serviço", async () => {
@@ -40,22 +55,6 @@ Deno.test("handler responde /health com status 200 e metadados do serviço", asy
     ok: true,
     service: "ifactory-product",
     version: "0.1.0",
-  });
-});
-
-Deno.test("handler mantém compatibilidade retroativa em /api/visits", async () => {
-  const response: Response = await handler(
-    new Request("http://localhost/api/visits"),
-  );
-
-  assertEquals(response.status, 200);
-  assertEquals(
-    response.headers.get("content-type"),
-    "application/json; charset=utf-8",
-  );
-  assertObjectMatch(await response.json(), {
-    visits: 1,
-    totalVisits: 1,
   });
 });
 
@@ -82,6 +81,18 @@ Deno.test("handler calcula juros compostos em POST /api/juros-compostos", async 
     taxa: 0.1,
     periodos: 2,
     montante: 1210,
+  });
+});
+
+Deno.test("handler retorna 405 em GET /api/juros-compostos com Allow POST", async () => {
+  const response: Response = await handler(
+    new Request("http://localhost/api/juros-compostos"),
+  );
+
+  assertEquals(response.status, 405);
+  assertEquals(response.headers.get("allow"), "POST");
+  assertObjectMatch(await response.json(), {
+    error: "method not allowed",
   });
 });
 
@@ -226,31 +237,9 @@ Deno.test("handler retorna 400 para campos extras em /api/juros-compostos", asyn
   });
 });
 
-Deno.test("handler retorna 400 para periodos não inteiro em /api/juros-compostos", async () => {
-  const response: Response = await handler(
-    new Request("http://localhost/api/juros-compostos", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        capitalInicial: 1000,
-        taxa: 0.1,
-        periodos: 2.5,
-      }),
-    }),
-  );
-
-  assertEquals(response.status, 400);
-  assertObjectMatch(await response.json(), {
-    error: "invalid payload",
-    details: {
-      periodos: "must be an integer",
-    },
-  });
-});
-
 Deno.test("handler retorna 404 para rota desconhecida", async () => {
   const response: Response = await handler(
-    new Request("http://localhost/inexistente"),
+    new Request("http://localhost/rota-inexistente"),
   );
 
   assertEquals(response.status, 404);

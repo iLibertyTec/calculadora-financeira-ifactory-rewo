@@ -105,6 +105,12 @@ function renderHomePage(): string {
         cursor: pointer;
       }
 
+      .hint {
+        margin: 0;
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
       .status {
         margin-top: 24px;
         display: grid;
@@ -127,37 +133,46 @@ function renderHomePage(): string {
           valor principal, taxa mensal e prazo em meses.
         </p>
 
-        <form method="post" action="#">
+        <form method="get" action="/" novalidate>
           <fieldset>
             <legend>Dados da simulação</legend>
 
             <div class="field">
-              <label for="principal">Valor principal</label>
+              <label for="principal">Valor principal *</label>
               <input
                 id="principal"
                 name="principal"
-                type="number"
+                type="text"
                 inputmode="decimal"
-                min="0"
-                step="0.01"
+                required
+                aria-required="true"
+                aria-describedby="principal-ajuda"
                 placeholder="Ex.: 1000,00"
               />
+              <p id="principal-ajuda" class="hint">
+                Campo obrigatório. Use ponto ou vírgula para decimais.
+              </p>
             </div>
 
             <div class="field">
-              <label for="taxaMensal">Taxa mensal (%)</label>
+              <label for="taxaMensal">Taxa mensal (%) *</label>
               <input
                 id="taxaMensal"
                 name="taxaMensal"
-                type="number"
+                type="text"
                 inputmode="decimal"
-                step="0.01"
+                required
+                aria-required="true"
+                aria-describedby="taxaMensal-ajuda"
                 placeholder="Ex.: 1,50"
               />
+              <p id="taxaMensal-ajuda" class="hint">
+                Campo obrigatório. Informe a taxa em porcentagem mensal.
+              </p>
             </div>
 
             <div class="field">
-              <label for="meses">Meses</label>
+              <label for="meses">Meses *</label>
               <input
                 id="meses"
                 name="meses"
@@ -165,8 +180,14 @@ function renderHomePage(): string {
                 inputmode="numeric"
                 min="1"
                 step="1"
+                required
+                aria-required="true"
+                aria-describedby="meses-ajuda"
                 placeholder="Ex.: 12"
               />
+              <p id="meses-ajuda" class="hint">
+                Campo obrigatório. Informe um número inteiro maior que zero.
+              </p>
             </div>
           </fieldset>
 
@@ -175,7 +196,9 @@ function renderHomePage(): string {
 
         <div class="status">
           <output id="resultado" aria-live="polite"></output>
-          <div id="erro" aria-live="polite" role="alert"></div>
+          <div id="erro" aria-live="polite" role="alert">
+            Preencha os campos obrigatórios para realizar a simulação.
+          </div>
         </div>
       </section>
     </main>

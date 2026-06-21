@@ -13,18 +13,26 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /<html lang="pt-BR">/);
   assertMatch(body, /<title>Calculadora Financeira iFactory<\/title>/);
   assertMatch(body, /<legend>Dados da simulação<\/legend>/);
-  assertMatch(body, /<label for="principal">Valor principal<\/label>/);
+  assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
   assertMatch(body, /name="principal"/);
-  assertMatch(body, /<label for="taxaMensal">Taxa mensal \(%\)<\/label>/);
+  assertMatch(body, /type="text"/);
+  assertMatch(body, /placeholder="Ex\.: 1000,00"/);
+  assertMatch(body, /required/);
+  assertMatch(body, /aria-describedby="principal-ajuda"/);
+  assertMatch(body, /<label for="taxaMensal">Taxa mensal \(%\) \*<\/label>/);
   assertMatch(body, /name="taxaMensal"/);
-  assertMatch(body, /<label for="meses">Meses<\/label>/);
+  assertMatch(body, /placeholder="Ex\.: 1,50"/);
+  assertMatch(body, /aria-describedby="taxaMensal-ajuda"/);
+  assertMatch(body, /<label for="meses">Meses \*<\/label>/);
   assertMatch(body, /name="meses"/);
+  assertMatch(body, /aria-describedby="meses-ajuda"/);
   assertMatch(body, /<button type="submit">Calcular<\/button>/);
   assertMatch(body, /<output id="resultado" aria-live="polite"><\/output>/);
   assertMatch(
     body,
-    /<div id="erro" aria-live="polite" role="alert"><\/div>/,
+    /<div id="erro" aria-live="polite" role="alert">[\s\S]*Preencha os campos obrigatórios para realizar a simulação\.[\s\S]*<\/div>/,
   );
+  assertMatch(body, /<form method="get" action="\/" novalidate>/);
 });
 
 Deno.test("GET / não referencia frameworks ou dependências externas", async () => {

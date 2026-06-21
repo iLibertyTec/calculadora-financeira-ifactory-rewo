@@ -18,9 +18,6 @@ function renderHomePage(): string {
         --muted: #5b657a;
         --border: #d8deea;
         --accent: #1d4ed8;
-        --error-bg: #fef2f2;
-        --error-ink: #b91c1c;
-        --result-bg: #eff6ff;
       }
 
       * {
@@ -67,6 +64,19 @@ function renderHomePage(): string {
         gap: 16px;
       }
 
+      fieldset {
+        margin: 0;
+        padding: 0;
+        border: 0;
+        display: grid;
+        gap: 16px;
+      }
+
+      legend {
+        margin-bottom: 8px;
+        font-weight: 700;
+      }
+
       .field {
         display: grid;
         gap: 8px;
@@ -95,20 +105,16 @@ function renderHomePage(): string {
         cursor: pointer;
       }
 
-      #resultado,
-      #erro {
+      .status {
         margin-top: 24px;
-        padding: 16px;
-        border-radius: 12px;
+        display: grid;
+        gap: 16px;
       }
 
-      #resultado {
-        background: var(--result-bg);
-      }
-
-      #erro {
-        background: var(--error-bg);
-        color: var(--error-ink);
+      output,
+      [role="alert"] {
+        display: block;
+        min-height: 24px;
       }
     </style>
   </head>
@@ -121,59 +127,56 @@ function renderHomePage(): string {
           valor principal, taxa mensal e prazo em meses.
         </p>
 
-        <form method="post" action="#" aria-describedby="descricao-formulario">
-          <span id="descricao-formulario" hidden>
-            Formulário para cálculo financeiro.
-          </span>
+        <form method="post" action="#">
+          <fieldset>
+            <legend>Dados da simulação</legend>
 
-          <div class="field">
-            <label for="principal">Valor principal</label>
-            <input
-              id="principal"
-              name="principal"
-              type="number"
-              inputmode="decimal"
-              min="0"
-              step="0.01"
-              placeholder="Ex.: 1000,00"
-            />
-          </div>
+            <div class="field">
+              <label for="principal">Valor principal</label>
+              <input
+                id="principal"
+                name="principal"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="Ex.: 1000,00"
+              />
+            </div>
 
-          <div class="field">
-            <label for="taxaMensal">Taxa mensal (%)</label>
-            <input
-              id="taxaMensal"
-              name="taxaMensal"
-              type="number"
-              inputmode="decimal"
-              step="0.01"
-              placeholder="Ex.: 1,50"
-            />
-          </div>
+            <div class="field">
+              <label for="taxaMensal">Taxa mensal (%)</label>
+              <input
+                id="taxaMensal"
+                name="taxaMensal"
+                type="number"
+                inputmode="decimal"
+                step="0.01"
+                placeholder="Ex.: 1,50"
+              />
+            </div>
 
-          <div class="field">
-            <label for="meses">Meses</label>
-            <input
-              id="meses"
-              name="meses"
-              type="number"
-              inputmode="numeric"
-              min="1"
-              step="1"
-              placeholder="Ex.: 12"
-            />
-          </div>
+            <div class="field">
+              <label for="meses">Meses</label>
+              <input
+                id="meses"
+                name="meses"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                step="1"
+                placeholder="Ex.: 12"
+              />
+            </div>
+          </fieldset>
 
           <button type="submit">Calcular</button>
         </form>
 
-        <section id="resultado" aria-live="polite" aria-label="Resultado">
-          Resultado da simulação aparecerá aqui.
-        </section>
-
-        <section id="erro" aria-live="polite" aria-label="Mensagens de erro">
-          Nenhuma mensagem de erro no momento.
-        </section>
+        <div class="status">
+          <output id="resultado" aria-live="polite"></output>
+          <div id="erro" aria-live="polite" role="alert"></div>
+        </div>
       </section>
     </main>
   </body>

@@ -12,6 +12,7 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   );
   assertMatch(body, /<html lang="pt-BR">/);
   assertMatch(body, /<title>Calculadora Financeira iFactory<\/title>/);
+  assertMatch(body, /<legend>Dados da simulação<\/legend>/);
   assertMatch(body, /<label for="principal">Valor principal<\/label>/);
   assertMatch(body, /name="principal"/);
   assertMatch(body, /<label for="taxaMensal">Taxa mensal \(%\)<\/label>/);
@@ -19,8 +20,11 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /<label for="meses">Meses<\/label>/);
   assertMatch(body, /name="meses"/);
   assertMatch(body, /<button type="submit">Calcular<\/button>/);
-  assertMatch(body, /id="resultado"/);
-  assertMatch(body, /id="erro"/);
+  assertMatch(body, /<output id="resultado" aria-live="polite"><\/output>/);
+  assertMatch(
+    body,
+    /<div id="erro" aria-live="polite" role="alert"><\/div>/,
+  );
 });
 
 Deno.test("GET / não referencia frameworks ou dependências externas", async () => {

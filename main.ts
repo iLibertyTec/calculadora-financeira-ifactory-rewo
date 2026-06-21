@@ -1,4 +1,5 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
+import { createHealthResponse } from "./src/health.ts";
 
 const counter = new VisitCounter();
 
@@ -6,11 +7,7 @@ export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
   if (url.pathname === "/health") {
-    return Response.json({
-      ok: true,
-      service: "ifactory-product",
-      version: "0.1.0",
-    });
+    return createHealthResponse();
   }
 
   if (url.pathname === "/api/visits" && req.method === "GET") {

@@ -8,8 +8,8 @@ export function calcularJurosCompostos(
   taxaMensalPercent: number,
   meses: number,
 ): ResultadoJurosCompostos {
-  const montante: number =
-    principal * (1 + taxaMensalPercent / 100) ** meses;
+  const taxaMensal: number = taxaMensalPercent / 100;
+  const montante: number = principal * ((1 + taxaMensal) ** meses);
   const jurosTotais: number = montante - principal;
 
   return {

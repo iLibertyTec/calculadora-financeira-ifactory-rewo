@@ -3,6 +3,47 @@ import { calcularJurosCompostos } from "./src/juros_compostos.ts";
 
 const counter = new VisitCounter();
 
+interface JurosCompostosPayload {
+  principal: number;
+  taxaMensal: number;
+  meses: number;
+}
+
+function validarCampoNumerico(
+  valor: unknown,
+  nomeCampo: "principal" | "taxaMensal" | "meses",
+): number {
+  if (typeof valor === "undefined") {
+    throw new TypeError(`${nomeCampo} é obrigatório.`);
+  }
+
+  if (
+    typeof valor !== "number" || Number.isNaN(valor) || !Number.isFinite(valor)
+  ) {
+    throw new TypeError(`${nomeCampo} deve ser um número finito.`);
+  }
+
+  return valor;
+}
+
+function parseJurosCompostosPayload(body: unknown): JurosCompostosPayload {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    throw new TypeError("Corpo da requisição deve ser um objeto JSON.");
+  }
+
+  const payload = body as Record<string, unknown>;
+
+  return {
+    principal: validarCampoNumerico(payload.principal, "principal"),
+    taxaMensal: validarCampoNumerico(payload.taxaMensal, "taxaMensal"),
+    meses: validarCampoNumerico(payload.meses, "meses"),
+  };
+}
+
+function arredondarTresCasas(valor: number): number {
+  return Math.round(valor * 1000) / 1000;
+}
+
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
@@ -55,23 +96,17 @@ export async function handler(req: Request): Promise<Response> {
     }
 
     try {
-      if (typeof body !== "object" || body === null) {
-        throw new TypeError("Corpo da requisição deve ser um objeto JSON.");
-      }
-
-      const payload = body as {
-        principal?: unknown;
-        taxaMensal?: unknown;
-        meses?: unknown;
-      };
-
+      const payload = parseJurosCompostosPayload(body);
       const resultado = calcularJurosCompostos(
-        payload.principal as number,
-        payload.taxaMensal as number,
-        payload.meses as number,
+        payload.principal,
+        payload.taxaMensal,
+        payload.meses,
       );
 
-      return Response.json(resultado);
+      return Response.json({
+        montante: arredondarTresCasas(resultado.montante),
+        jurosTotais: arredondarTresCasas(resultado.jurosTotais),
+      });
     } catch (error) {
       const message = error instanceof Error
         ? error.message

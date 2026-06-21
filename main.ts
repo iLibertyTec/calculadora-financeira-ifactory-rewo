@@ -84,7 +84,9 @@ function renderHomePage(url: URL): string {
     }
 
     if (months === null || months <= 0) {
-      errors.push("Informe a quantidade de meses com número inteiro maior que zero.");
+      errors.push(
+        "Informe a quantidade de meses com número inteiro maior que zero.",
+      );
     }
 
     if (errors.length > 0) {
@@ -96,9 +98,18 @@ function renderHomePage(url: URL): string {
       const total = calculateCompoundAmount(principal, monthlyRate, months);
       statusDescription =
         "Simulação calculada com sucesso. Confira o resultado abaixo.";
-      resultHtml = `Montante final estimado: <strong>${escapeHtml(formatCurrency(total))}</strong>.`;
+      resultHtml =
+        `Montante final estimado: <strong>${escapeHtml(formatCurrency(total))}</strong>.`;
     }
   }
+
+  const resultSection = resultHtml === ""
+    ? '<output id="resultado" aria-live="polite" aria-atomic="true"></output>'
+    : `<output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>`;
+
+  const errorSection = errorHtml === ""
+    ? '<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden></div>'
+    : `<div id="erro" aria-live="assertive" aria-atomic="true" role="alert">${errorHtml}</div>`;
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -109,23 +120,42 @@ function renderHomePage(url: URL): string {
     <style>
       :root {
         color-scheme: light;
-        --bg: #f5f7fb;
+        --bg: #f3f6fb;
+        --bg-accent: #e8eefc;
         --panel: #ffffff;
         --ink: #162033;
-        --muted: #5b657a;
+        --muted: #4b5565;
         --border: #d8deea;
         --accent: #1d4ed8;
-        --danger: #b91c1c;
+        --accent-strong: #173ea6;
+        --accent-soft: #dbeafe;
+        --success-ink: #166534;
+        --success-bg: #ecfdf3;
+        --success-border: #86efac;
+        --danger: #991b1b;
+        --danger-bg: #fef2f2;
+        --danger-border: #fecaca;
+        --shadow: 0 18px 50px rgba(22, 32, 51, 0.12);
       }
 
       * {
         box-sizing: border-box;
       }
 
+      [hidden] {
+        display: none;
+      }
+
+      html {
+        font-size: 16px;
+      }
+
       body {
         margin: 0;
         font-family: Arial, Helvetica, sans-serif;
-        background: var(--bg);
+        background:
+          radial-gradient(circle at top, var(--bg-accent), transparent 35%),
+          var(--bg);
         color: var(--ink);
       }
 
@@ -138,23 +168,38 @@ function renderHomePage(url: URL): string {
 
       .card {
         width: 100%;
-        max-width: 640px;
+        max-width: 720px;
+        margin: 0 auto;
         background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 16px;
+        border: 1px solid rgba(216, 222, 234, 0.9);
+        border-radius: 20px;
         padding: 32px;
-        box-shadow: 0 10px 30px rgba(22, 32, 51, 0.08);
+        box-shadow: var(--shadow);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 16px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font-size: 0.9rem;
+        font-weight: 700;
       }
 
       h1 {
-        margin: 0 0 8px;
-        font-size: 2rem;
+        margin: 0 0 10px;
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+        line-height: 1.15;
       }
 
       p {
         margin: 0 0 24px;
         color: var(--muted);
-        line-height: 1.5;
+        line-height: 1.6;
       }
 
       form {
@@ -164,15 +209,24 @@ function renderHomePage(url: URL): string {
 
       fieldset {
         margin: 0;
-        padding: 0;
-        border: 0;
+        padding: 20px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
         display: grid;
         gap: 16px;
+        background: #fcfdff;
       }
 
       legend {
-        margin-bottom: 8px;
+        padding: 0 8px;
         font-weight: 700;
+        color: var(--ink);
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       }
 
       .field {
@@ -182,182 +236,265 @@ function renderHomePage(url: URL): string {
 
       label {
         font-weight: 700;
-      }
-
-      input {
-        width: 100%;
-        padding: 12px;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        font: inherit;
-      }
-
-      button {
-        padding: 14px 18px;
-        border: 0;
-        border-radius: 10px;
-        background: var(--accent);
-        color: #ffffff;
-        font: inherit;
-        font-weight: 700;
-        cursor: pointer;
+        color: var(--ink);
       }
 
       .hint {
         margin: 0;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      input {
+        width: 100%;
+        inline-size: 100%;
+        min-width: 0;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        font: inherit;
+        color: var(--ink);
+        background: #ffffff;
+      }
+
+      input:focus {
+        outline: 3px solid rgba(29, 78, 216, 0.18);
+        outline-offset: 1px;
+        border-color: var(--accent);
+      }
+
+      button {
+        appearance: none;
+        border: 0;
+        border-radius: 12px;
+        padding: 14px 18px;
+        font: inherit;
+        font-weight: 700;
+        color: #ffffff;
+        background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+        cursor: pointer;
+        box-shadow: 0 10px 24px rgba(29, 78, 216, 0.22);
+      }
+
+      button:hover {
+        filter: brightness(1.03);
+      }
+
+      button:focus {
+        outline: 3px solid rgba(29, 78, 216, 0.2);
+        outline-offset: 2px;
+      }
+
+      .feedback {
+        display: grid;
+        gap: 12px;
+        padding: 18px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: #ffffff;
+      }
+
+      .feedback h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        color: var(--ink);
+      }
+
+      #resultado,
+      [role="alert"] {
+        display: block;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid transparent;
+        word-break: break-word;
+      }
+
+      #resultado:empty {
+        display: none;
+      }
+
+      #resultado {
+        color: var(--success-ink);
+        background: var(--success-bg);
+        border-color: var(--success-border);
+      }
+
+      #resultado strong {
+        color: #14532d;
+      }
+
+      [role="alert"] {
+        color: var(--danger);
+        background: var(--danger-bg);
+        border-color: var(--danger-border);
+      }
+
+      [role="alert"] p {
+        margin: 0;
+        color: inherit;
+      }
+
+      [role="alert"] p + p {
+        margin-top: 8px;
+      }
+
+      .footer-note {
+        margin-top: 20px;
         font-size: 0.95rem;
         color: var(--muted);
       }
 
-      .status {
-        margin-top: 24px;
-        padding-top: 24px;
-        border-top: 1px solid var(--border);
-        display: grid;
-        gap: 16px;
+      @media (max-width: 900px) {
+        .card {
+          max-width: 680px;
+        }
       }
 
-      output,
-      [role="alert"] {
-        display: block;
-        min-height: 24px;
+      @media (max-width: 720px) {
+        main {
+          padding: 16px;
+        }
+
+        .card {
+          padding: 24px;
+          border-radius: 18px;
+        }
+
+        fieldset,
+        .feedback {
+          padding: 16px;
+        }
       }
 
-      #erro {
-        color: var(--danger);
-      }
+      @media (max-width: 400px) {
+        .card {
+          padding: 18px;
+        }
 
-      #erro p,
-      #resultado p {
-        margin: 0;
-      }
+        fieldset,
+        .feedback {
+          padding: 14px;
+        }
 
-      [hidden] {
-        display: none;
+        button {
+          width: 100%;
+          inline-size: 100%;
+        }
       }
     </style>
   </head>
   <body>
     <main>
-      <section class="card" aria-labelledby="titulo-principal">
-        <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
+      <section class="card" aria-labelledby="page-title">
+        <div class="eyebrow">iFactory • Simulação financeira</div>
+        <h1 id="page-title">Calculadora Financeira iFactory</h1>
         <p>
-          Informe os dados abaixo para calcular uma simulação financeira com
-          valor principal, taxa mensal e prazo em meses.
+          Simule rapidamente o montante final com juros compostos a partir do valor principal,
+          da taxa mensal e do período informado.
         </p>
-
         <form method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
-
-            <div class="field">
-              <label for="principal">Valor principal *</label>
-              <input
-                id="principal"
-                name="principal"
-                type="text"
-                inputmode="decimal"
-                required
-                aria-required="true"
-                aria-describedby="principal-ajuda"
-                placeholder="Ex.: 1000,00"
-                value="${escapeHtml(principalValue)}"
-              />
-              <p id="principal-ajuda" class="hint">
-                Campo obrigatório. Informe um valor maior que zero. Aceita ponto
-                ou vírgula para decimais.
-              </p>
+            <div class="grid">
+              <div class="field">
+                <label for="principal">Valor principal *</label>
+                <input
+                  id="principal"
+                  name="principal"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="Ex.: 1000,00"
+                  value="${escapeHtml(principalValue)}"
+                  aria-describedby="principal-ajuda"
+                  required
+                />
+                <p id="principal-ajuda" class="hint">Use vírgula ou ponto para separar os centavos.</p>
+              </div>
+              <div class="field">
+                <label for="taxaMensal">Taxa mensal (%) *</label>
+                <input
+                  id="taxaMensal"
+                  name="taxaMensal"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="Ex.: 1,50"
+                  value="${escapeHtml(monthlyRateValue)}"
+                  aria-describedby="taxaMensal-ajuda"
+                  required
+                />
+                <p id="taxaMensal-ajuda" class="hint">Informe a taxa percentual aplicada a cada mês.</p>
+              </div>
+              <div class="field">
+                <label for="meses">Meses *</label>
+                <input
+                  id="meses"
+                  name="meses"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="Ex.: 12"
+                  value="${escapeHtml(monthsValue)}"
+                  aria-describedby="meses-ajuda"
+                  required
+                />
+                <p id="meses-ajuda" class="hint">Digite um número inteiro maior que zero.</p>
+              </div>
             </div>
-
-            <div class="field">
-              <label for="taxaMensal">Taxa mensal (%) *</label>
-              <input
-                id="taxaMensal"
-                name="taxaMensal"
-                type="text"
-                inputmode="decimal"
-                required
-                aria-required="true"
-                aria-describedby="taxaMensal-ajuda"
-                placeholder="Ex.: 1,50"
-                value="${escapeHtml(monthlyRateValue)}"
-              />
-              <p id="taxaMensal-ajuda" class="hint">
-                Campo obrigatório. Informe a taxa em porcentagem mensal. Aceita
-                ponto ou vírgula para decimais.
-              </p>
-            </div>
-
-            <div class="field">
-              <label for="meses">Meses *</label>
-              <input
-                id="meses"
-                name="meses"
-                type="text"
-                inputmode="numeric"
-                required
-                aria-required="true"
-                aria-describedby="meses-ajuda"
-                placeholder="Ex.: 12"
-                value="${escapeHtml(monthsValue)}"
-              />
-              <p id="meses-ajuda" class="hint">
-                Campo obrigatório. Informe um número inteiro maior que zero.
-              </p>
-            </div>
+            <button type="submit">Calcular</button>
           </fieldset>
-
-          <button type="submit">Calcular</button>
+          <section class="feedback" aria-labelledby="resultado-titulo">
+            <h2 id="resultado-titulo">Resultado da simulação</h2>
+            <p id="status-descricao">${escapeHtml(statusDescription)}</p>
+            ${resultSection}
+            ${errorSection}
+          </section>
         </form>
-
-        <section class="status" aria-labelledby="status-titulo">
-          <h2 id="status-titulo">Resultado da simulação</h2>
-          <p id="status-descricao" class="hint">${escapeHtml(statusDescription)}</p>
-          <output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>
-          <div id="erro" aria-live="assertive" aria-atomic="true" role="alert"${errorHtml === "" ? " hidden" : ""}>${errorHtml}</div>
-        </section>
+        <p class="footer-note">${escapeHtml(formatCounterMessage(counter.peek()))}</p>
       </section>
     </main>
   </body>
 </html>`;
 }
 
-export async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
+function jsonResponse(body: string, status = 200): Response {
+  return new Response(body, {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+    },
+  });
+}
+
+function htmlResponse(body: string): Response {
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+    },
+  });
+}
+
+export function handler(request: Request): Response {
+  const url = new URL(request.url);
 
   if (url.pathname === "/health") {
-    return Response.json({
-      ok: true,
-      service: "ifactory-product",
-      version: "0.1.0",
-    });
+    return jsonResponse('{"ok":true,"service":"calculadora-financeira-ifactory-rewo","version":"1.0.0"}');
   }
 
-  if (url.pathname === "/api/visits" && req.method === "GET") {
-    return Response.json(counter.state);
+  if (url.pathname === "/api/visits") {
+    return jsonResponse(
+      JSON.stringify({
+        visits: counter.peek(),
+        message: formatCounterMessage(counter.peek()),
+      }),
+    );
   }
 
-  if (url.pathname === "/api/visits" && req.method === "POST") {
-    const body = req.headers.get("content-type")?.includes("json")
-      ? await req.json().catch(() => ({}))
-      : {};
-    const visitorId = typeof body.visitorId === "string"
-      ? body.visitorId
-      : undefined;
-    const state = counter.recordVisit(visitorId);
-    return Response.json({
-      ...state,
-      message: formatCounterMessage(state),
-    });
+  if (url.pathname !== "/") {
+    return new Response("Not Found", { status: 404 });
   }
 
-  if (url.pathname === "/") {
-    return new Response(renderHomePage(url), {
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
-  }
-
-  return new Response("Not Found", { status: 404 });
+  counter.increment();
+  return htmlResponse(renderHomePage(url));
 }
 
 if (import.meta.main) {

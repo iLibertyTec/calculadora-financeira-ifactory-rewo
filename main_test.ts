@@ -12,6 +12,22 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   );
   assertMatch(body, /<html lang="pt-BR">/);
   assertMatch(body, /<title>Calculadora Financeira iFactory<\/title>/);
+  assertMatch(body, /<style>/);
+  assertMatch(body, /\.card/);
+  assertMatch(
+    body,
+    /grid-template-columns: repeat\(auto-fit, minmax\(180px, 1fr\)\);/,
+  );
+  assertMatch(body, /\[hidden\]\s*\{/);
+  assertMatch(body, /output,\s*\[role="alert"\]\s*\{/);
+  assertMatch(body, /display: block;/);
+  assertMatch(body, /word-break: break-word;/);
+  assertMatch(body, /@media \(max-width: 900px\)/);
+  assertMatch(body, /@media \(max-width: 720px\)/);
+  assertMatch(body, /@media \(max-width: 400px\)/);
+  assertMatch(body, /margin: 0 auto;/);
+  assertMatch(body, /button\s*\{[\s\S]*?cursor: pointer;/);
+  assertMatch(body, /button\s*\{[\s\S]*?@media \(max-width: 400px\)[\s\S]*?width: 100%;/);
   assertMatch(body, /<legend>Dados da simulação<\/legend>/);
   assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
   assertMatch(body, /name="principal"/);
@@ -30,12 +46,18 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /name="meses"/);
   assertMatch(body, /aria-describedby="meses-ajuda"/);
   assertMatch(body, /<button type="submit">Calcular<\/button>/);
-  assertMatch(body, /<output id="resultado" aria-live="polite" aria-atomic="true"><\/output>/);
+  assertMatch(
+    body,
+    /<output id="resultado" aria-live="polite" aria-atomic="true"><\/output>/,
+  );
   assertMatch(
     body,
     /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,
   );
-  assertMatch(body, /<form method="get" action="\/" aria-describedby="status-descricao">/);
+  assertMatch(
+    body,
+    /<form method="get" action="\/" aria-describedby="status-descricao">/,
+  );
   assertMatch(body, /Resultado da simulação/);
   assertNotMatch(body, /novalidate/);
 });
@@ -55,6 +77,7 @@ Deno.test("GET / processa a simulação pela query string", async () => {
   assertMatch(body, /value="1000,00"/);
   assertMatch(body, /value="1,5"/);
   assertMatch(body, /value="12"/);
+  assertMatch(body, /#resultado strong/);
   assertMatch(
     body,
     /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,
@@ -80,6 +103,10 @@ Deno.test("GET / exibe erros de validação quando necessário", async () => {
     body,
     /Informe a quantidade de meses com número inteiro maior que zero\./,
   );
+  assertMatch(
+    body,
+    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert"><p>Informe um valor principal maior que zero\.<\/p>/,
+  );
   assertNotMatch(body, /role="alert" hidden/);
 });
 
@@ -91,4 +118,32 @@ Deno.test("GET / não referencia frameworks ou dependências externas", async ()
   assertMatch(body, /^((?!fresh).)*$/is);
   assertMatch(body, /^((?!islands).)*$/is);
   assertMatch(body, /^((?!https?:\/\/).)*$/is);
+});
+
+Deno.test("GET /health permanece disponível", async () => {
+  const response = await handler(new Request("http://localhost/health"));
+  const body = await response.text();
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertEquals(
+    body,
+    '{"ok":true,"service":"calculadora-financeira-ifactory-rewo","version":"1.0.0"}',
+  );
+});
+
+Deno.test("GET /api/visits permanece disponível", async () => {
+  const response = await handler(new Request("http://localhost/api/visits"));
+  const body = await response.text();
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertMatch(body, /"visits":\d+/);
+  assertMatch(body, /"message":"/);
 });

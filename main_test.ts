@@ -12,6 +12,9 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   );
   assertMatch(body, /<html lang="pt-BR">/);
   assertMatch(body, /<title>Calculadora Financeira iFactory<\/title>/);
+  assertMatch(body, /<style>/);
+  assertMatch(body, /\.card/);
+  assertMatch(body, /@media \(max-width: 720px\)/);
   assertMatch(body, /<legend>Dados da simulação<\/legend>/);
   assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
   assertMatch(body, /name="principal"/);
@@ -30,12 +33,18 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /name="meses"/);
   assertMatch(body, /aria-describedby="meses-ajuda"/);
   assertMatch(body, /<button type="submit">Calcular<\/button>/);
-  assertMatch(body, /<output id="resultado" aria-live="polite" aria-atomic="true"><\/output>/);
+  assertMatch(
+    body,
+    /<output id="resultado" aria-live="polite" aria-atomic="true"><\/output>/,
+  );
   assertMatch(
     body,
     /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,
   );
-  assertMatch(body, /<form method="get" action="\/" aria-describedby="status-descricao">/);
+  assertMatch(
+    body,
+    /<form method="get" action="\/" aria-describedby="status-descricao">/,
+  );
   assertMatch(body, /Resultado da simulação/);
   assertNotMatch(body, /novalidate/);
 });

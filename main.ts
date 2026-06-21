@@ -84,7 +84,9 @@ function renderHomePage(url: URL): string {
     }
 
     if (months === null || months <= 0) {
-      errors.push("Informe a quantidade de meses com número inteiro maior que zero.");
+      errors.push(
+        "Informe a quantidade de meses com número inteiro maior que zero.",
+      );
     }
 
     if (errors.length > 0) {
@@ -96,9 +98,18 @@ function renderHomePage(url: URL): string {
       const total = calculateCompoundAmount(principal, monthlyRate, months);
       statusDescription =
         "Simulação calculada com sucesso. Confira o resultado abaixo.";
-      resultHtml = `Montante final estimado: <strong>${escapeHtml(formatCurrency(total))}</strong>.`;
+      resultHtml =
+        `Montante final estimado: <strong>${escapeHtml(formatCurrency(total))}</strong>.`;
     }
   }
+
+  const resultSection = resultHtml === ""
+    ? '<output id="resultado" aria-live="polite" aria-atomic="true"></output>'
+    : `<output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>`;
+
+  const errorSection = errorHtml === ""
+    ? '<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden></div>'
+    : `<div id="erro" aria-live="assertive" aria-atomic="true" role="alert">${errorHtml}</div>`;
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -109,23 +120,37 @@ function renderHomePage(url: URL): string {
     <style>
       :root {
         color-scheme: light;
-        --bg: #f5f7fb;
+        --bg: #f3f6fb;
+        --bg-accent: #e8eefc;
         --panel: #ffffff;
         --ink: #162033;
         --muted: #5b657a;
         --border: #d8deea;
         --accent: #1d4ed8;
+        --accent-strong: #1e40af;
+        --accent-soft: #dbeafe;
+        --success-bg: #ecfdf3;
+        --success-border: #86efac;
         --danger: #b91c1c;
+        --danger-bg: #fef2f2;
+        --danger-border: #fecaca;
+        --shadow: 0 18px 50px rgba(22, 32, 51, 0.12);
       }
 
       * {
         box-sizing: border-box;
       }
 
+      html {
+        font-size: 16px;
+      }
+
       body {
         margin: 0;
         font-family: Arial, Helvetica, sans-serif;
-        background: var(--bg);
+        background:
+          radial-gradient(circle at top, var(--bg-accent), transparent 35%),
+          var(--bg);
         color: var(--ink);
       }
 
@@ -138,41 +163,64 @@ function renderHomePage(url: URL): string {
 
       .card {
         width: 100%;
-        max-width: 640px;
+        max-width: 720px;
         background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 16px;
+        border: 1px solid rgba(216, 222, 234, 0.9);
+        border-radius: 20px;
         padding: 32px;
-        box-shadow: 0 10px 30px rgba(22, 32, 51, 0.08);
+        box-shadow: var(--shadow);
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin: 0 0 16px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font-size: 0.9rem;
+        font-weight: 700;
       }
 
       h1 {
-        margin: 0 0 8px;
-        font-size: 2rem;
+        margin: 0 0 10px;
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+        line-height: 1.15;
       }
 
       p {
         margin: 0 0 24px;
         color: var(--muted);
-        line-height: 1.5;
+        line-height: 1.6;
       }
 
       form {
         display: grid;
-        gap: 16px;
+        gap: 20px;
       }
 
       fieldset {
         margin: 0;
-        padding: 0;
-        border: 0;
+        padding: 20px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
         display: grid;
         gap: 16px;
+        background: #fcfdff;
       }
 
       legend {
-        margin-bottom: 8px;
+        padding: 0 8px;
         font-weight: 700;
+        color: var(--ink);
+      }
+
+      .grid {
+        display: grid;
+        gap: 16px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
       }
 
       .field {
@@ -182,48 +230,99 @@ function renderHomePage(url: URL): string {
 
       label {
         font-weight: 700;
+        color: var(--ink);
       }
 
       input {
         width: 100%;
-        padding: 12px;
+        min-height: 48px;
+        padding: 12px 14px;
         border: 1px solid var(--border);
-        border-radius: 10px;
+        border-radius: 12px;
+        background: #ffffff;
+        color: var(--ink);
         font: inherit;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      input::placeholder {
+        color: #8a94a6;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.14);
       }
 
       button {
+        min-height: 50px;
         padding: 14px 18px;
         border: 0;
-        border-radius: 10px;
-        background: var(--accent);
+        border-radius: 12px;
+        background: linear-gradient(180deg, var(--accent), var(--accent-strong));
         color: #ffffff;
         font: inherit;
         font-weight: 700;
         cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        box-shadow: 0 12px 24px rgba(29, 78, 216, 0.22);
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+      }
+
+      button:focus-visible {
+        outline: 3px solid rgba(29, 78, 216, 0.2);
+        outline-offset: 2px;
+      }
+
+      button:active {
+        transform: translateY(0);
       }
 
       .hint {
         margin: 0;
-        font-size: 0.95rem;
+        font-size: 0.92rem;
         color: var(--muted);
       }
 
       .status {
-        margin-top: 24px;
+        margin-top: 8px;
         padding-top: 24px;
         border-top: 1px solid var(--border);
         display: grid;
-        gap: 16px;
+        gap: 14px;
+      }
+
+      .status h2 {
+        margin: 0;
+        font-size: 1.1rem;
+      }
+
+      #status-descricao {
+        margin: 0;
       }
 
       output,
       [role="alert"] {
         display: block;
         min-height: 24px;
+        padding: 16px;
+        border-radius: 14px;
+        line-height: 1.6;
+      }
+
+      #resultado {
+        background: var(--success-bg);
+        border: 1px solid var(--success-border);
+        color: #166534;
       }
 
       #erro {
+        background: var(--danger-bg);
+        border: 1px solid var(--danger-border);
         color: var(--danger);
       }
 
@@ -232,14 +331,43 @@ function renderHomePage(url: URL): string {
         margin: 0;
       }
 
+      #erro p + p {
+        margin-top: 8px;
+      }
+
+      .footer-note {
+        margin-top: 20px;
+        font-size: 0.92rem;
+      }
+
       [hidden] {
         display: none;
+      }
+
+      @media (max-width: 720px) {
+        main {
+          padding: 16px;
+        }
+
+        .card {
+          padding: 22px;
+          border-radius: 18px;
+        }
+
+        .grid {
+          grid-template-columns: 1fr;
+        }
+
+        fieldset {
+          padding: 16px;
+        }
       }
     </style>
   </head>
   <body>
     <main>
       <section class="card" aria-labelledby="titulo-principal">
+        <div class="eyebrow">iFactory • Simulação financeira</div>
         <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
         <p>
           Informe os dados abaixo para calcular uma simulação financeira com
@@ -250,114 +378,90 @@ function renderHomePage(url: URL): string {
           <fieldset>
             <legend>Dados da simulação</legend>
 
-            <div class="field">
-              <label for="principal">Valor principal *</label>
-              <input
-                id="principal"
-                name="principal"
-                type="text"
-                inputmode="decimal"
-                required
-                aria-required="true"
-                aria-describedby="principal-ajuda"
-                placeholder="Ex.: 1000,00"
-                value="${escapeHtml(principalValue)}"
-              />
-              <p id="principal-ajuda" class="hint">
-                Campo obrigatório. Informe um valor maior que zero. Aceita ponto
-                ou vírgula para decimais.
-              </p>
+            <div class="grid">
+              <div class="field">
+                <label for="principal">Valor principal *</label>
+                <input
+                  id="principal"
+                  name="principal"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="Ex.: 1000,00"
+                  aria-describedby="principal-ajuda"
+                  value="${escapeHtml(principalValue)}"
+                  required
+                />
+                <p id="principal-ajuda" class="hint">
+                  Informe o valor inicial da aplicação ou investimento.
+                </p>
+              </div>
+
+              <div class="field">
+                <label for="taxaMensal">Taxa mensal (%) *</label>
+                <input
+                  id="taxaMensal"
+                  name="taxaMensal"
+                  type="text"
+                  inputmode="decimal"
+                  placeholder="Ex.: 1,50"
+                  aria-describedby="taxaMensal-ajuda"
+                  value="${escapeHtml(monthlyRateValue)}"
+                  required
+                />
+                <p id="taxaMensal-ajuda" class="hint">
+                  Use percentual mensal, aceitando vírgula ou ponto.
+                </p>
+              </div>
+
+              <div class="field">
+                <label for="meses">Meses *</label>
+                <input
+                  id="meses"
+                  name="meses"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="Ex.: 12"
+                  aria-describedby="meses-ajuda"
+                  value="${escapeHtml(monthsValue)}"
+                  required
+                />
+                <p id="meses-ajuda" class="hint">
+                  Informe a duração da simulação em meses inteiros.
+                </p>
+              </div>
             </div>
 
-            <div class="field">
-              <label for="taxaMensal">Taxa mensal (%) *</label>
-              <input
-                id="taxaMensal"
-                name="taxaMensal"
-                type="text"
-                inputmode="decimal"
-                required
-                aria-required="true"
-                aria-describedby="taxaMensal-ajuda"
-                placeholder="Ex.: 1,50"
-                value="${escapeHtml(monthlyRateValue)}"
-              />
-              <p id="taxaMensal-ajuda" class="hint">
-                Campo obrigatório. Informe a taxa em porcentagem mensal. Aceita
-                ponto ou vírgula para decimais.
-              </p>
-            </div>
-
-            <div class="field">
-              <label for="meses">Meses *</label>
-              <input
-                id="meses"
-                name="meses"
-                type="text"
-                inputmode="numeric"
-                required
-                aria-required="true"
-                aria-describedby="meses-ajuda"
-                placeholder="Ex.: 12"
-                value="${escapeHtml(monthsValue)}"
-              />
-              <p id="meses-ajuda" class="hint">
-                Campo obrigatório. Informe um número inteiro maior que zero.
-              </p>
-            </div>
+            <button type="submit">Calcular</button>
           </fieldset>
-
-          <button type="submit">Calcular</button>
         </form>
 
-        <section class="status" aria-labelledby="status-titulo">
-          <h2 id="status-titulo">Resultado da simulação</h2>
-          <p id="status-descricao" class="hint">${escapeHtml(statusDescription)}</p>
-          <output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>
-          <div id="erro" aria-live="assertive" aria-atomic="true" role="alert"${errorHtml === "" ? " hidden" : ""}>${errorHtml}</div>
+        <section class="status" aria-labelledby="resultado-titulo">
+          <h2 id="resultado-titulo">Resultado da simulação</h2>
+          <p id="status-descricao">${escapeHtml(statusDescription)}</p>
+          ${resultSection}
+          ${errorSection}
         </section>
+
+        <p class="footer-note">${escapeHtml(formatCounterMessage(counter.increment()))}</p>
       </section>
     </main>
   </body>
 </html>`;
 }
 
-export async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
+export function handler(request: Request): Response {
+  const url = new URL(request.url);
 
-  if (url.pathname === "/health") {
-    return Response.json({
-      ok: true,
-      service: "ifactory-product",
-      version: "0.1.0",
-    });
+  if (request.method !== "GET" || url.pathname !== "/") {
+    return new Response("Not Found", { status: 404 });
   }
 
-  if (url.pathname === "/api/visits" && req.method === "GET") {
-    return Response.json(counter.state);
-  }
-
-  if (url.pathname === "/api/visits" && req.method === "POST") {
-    const body = req.headers.get("content-type")?.includes("json")
-      ? await req.json().catch(() => ({}))
-      : {};
-    const visitorId = typeof body.visitorId === "string"
-      ? body.visitorId
-      : undefined;
-    const state = counter.recordVisit(visitorId);
-    return Response.json({
-      ...state,
-      message: formatCounterMessage(state),
-    });
-  }
-
-  if (url.pathname === "/") {
-    return new Response(renderHomePage(url), {
-      headers: { "content-type": "text/html; charset=utf-8" },
-    });
-  }
-
-  return new Response("Not Found", { status: 404 });
+  return new Response(renderHomePage(url), {
+    status: 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+    },
+  });
 }
 
 if (import.meta.main) {

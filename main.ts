@@ -97,6 +97,10 @@ function createJsonResponse(body: string, status: number): Response {
   });
 }
 
+function createApiErrorResponse(status: number, message: string): Response {
+  return createJsonResponse(JSON.stringify({ error: message }), status);
+}
+
 function renderHomePage(url: URL): string {
   const principalValue = url.searchParams.get("principal") ?? "";
   const monthlyRateValue = url.searchParams.get("taxaMensal") ?? "";
@@ -226,38 +230,43 @@ function renderHomePage(url: URL): string {
       }
 
       h1 {
-        margin: 0 0 10px;
-        font-size: clamp(2rem, 4vw, 2.75rem);
+        margin: 0 0 12px;
+        font-size: clamp(2rem, 4vw, 2.8rem);
         line-height: 1.1;
       }
 
-      p.lead {
-        margin: 0 0 24px;
+      p {
+        margin: 0;
         color: var(--muted);
-        font-size: 1rem;
         line-height: 1.6;
+      }
+
+      .intro {
+        margin-bottom: 28px;
       }
 
       form {
         display: grid;
-        gap: 20px;
+        gap: 24px;
       }
 
       fieldset {
         margin: 0;
-        padding: 0;
-        border: 0;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: #fcfdff;
       }
 
       legend {
-        margin-bottom: 12px;
+        padding: 0 8px;
         font-weight: 700;
       }
 
       .grid {
         display: grid;
+        gap: 20px;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 16px;
       }
 
       .field {
@@ -271,45 +280,23 @@ function renderHomePage(url: URL): string {
 
       input {
         width: 100%;
-        padding: 12px 14px;
         border: 1px solid var(--border);
         border-radius: 12px;
+        padding: 14px 16px;
         font: inherit;
-        color: inherit;
+        color: var(--ink);
         background: #fff;
       }
 
       input:focus-visible,
       button:focus-visible {
-        outline: 3px solid rgba(29, 78, 216, 0.25);
+        outline: 3px solid rgba(29, 78, 216, 0.24);
         outline-offset: 2px;
       }
 
-      small {
+      .hint {
+        font-size: 0.95rem;
         color: var(--muted);
-      }
-
-      button {
-        appearance: none;
-        border: 0;
-        border-radius: 999px;
-        padding: 14px 20px;
-        font: inherit;
-        font-weight: 700;
-        background: var(--accent);
-        color: #fff;
-        cursor: pointer;
-        transition: transform 0.15s ease, box-shadow 0.15s ease,
-          background 0.15s ease;
-      }
-
-      button:hover {
-        background: var(--accent-strong);
-      }
-
-      button:disabled {
-        opacity: 0.7;
-        cursor: wait;
       }
 
       .actions {
@@ -317,15 +304,44 @@ function renderHomePage(url: URL): string {
         justify-content: flex-start;
       }
 
-      .status {
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 14px 22px;
+        font: inherit;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        box-shadow: 0 14px 30px rgba(29, 78, 216, 0.24);
+        cursor: pointer;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 18px 34px rgba(29, 78, 216, 0.28);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.8;
+        transform: none;
+      }
+
+      .feedback {
+        margin-top: 28px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .feedback h2 {
         margin: 0;
-        color: var(--muted);
+        font-size: 1.1rem;
       }
 
       output,
       [role="alert"] {
         display: block;
-        margin-top: 20px;
         padding: 16px 18px;
         border-radius: 14px;
         border: 1px solid transparent;
@@ -333,38 +349,34 @@ function renderHomePage(url: URL): string {
       }
 
       #resultado {
-        color: var(--success-ink);
         background: var(--success-bg);
+        color: var(--success-ink);
         border-color: var(--success-border);
       }
 
       #resultado strong {
-        font-size: 1.05em;
+        font-size: 1.1em;
       }
 
       #erro {
-        color: var(--danger);
         background: var(--danger-bg);
+        color: var(--danger);
         border-color: var(--danger-border);
-      }
-
-      #erro:focus {
-        outline: 3px solid rgba(153, 27, 27, 0.2);
-        outline-offset: 2px;
-      }
-
-      #erro p {
-        margin: 0;
       }
 
       #erro p + p {
         margin-top: 8px;
       }
 
+      .status {
+        font-size: 0.95rem;
+        color: var(--muted);
+      }
+
       .footer {
         margin-top: 24px;
+        font-size: 0.9rem;
         color: var(--muted);
-        font-size: 0.95rem;
       }
 
       @media (max-width: 900px) {
@@ -378,14 +390,18 @@ function renderHomePage(url: URL): string {
           padding: 16px;
         }
 
-        .card {
-          padding: 22px;
-          border-radius: 18px;
+        .card,
+        fieldset {
+          padding: 20px;
         }
       }
 
       @media (max-width: 400px) {
-        .actions,
+        .card {
+          padding: 18px;
+          border-radius: 16px;
+        }
+
         button {
           width: 100%;
         }
@@ -395,12 +411,13 @@ function renderHomePage(url: URL): string {
   <body>
     <main>
       <section class="card" aria-labelledby="titulo-principal">
-        <div class="eyebrow">iFactory • Simulador</div>
-        <h1 id="titulo-principal">Calculadora financeira</h1>
-        <p class="lead">
-          Simule juros compostos de forma simples para estimar o montante final do seu investimento.
+        <p class="eyebrow">iFactory • Simulador</p>
+        <h1 id="titulo-principal">Calculadora de juros compostos</h1>
+        <p class="intro">
+          Informe os dados abaixo para simular o montante final de um investimento com capitalização mensal.
         </p>
-        <form method="get" action="/" aria-describedby="status-descricao">
+
+        <form method="get" action="/" aria-describedby="status-descricao" id="form-simulacao">
           <fieldset>
             <legend>Dados da simulação</legend>
             <div class="grid">
@@ -412,12 +429,13 @@ function renderHomePage(url: URL): string {
                   type="text"
                   inputmode="decimal"
                   placeholder="Ex.: 1000,00"
-                  value="${escapeHtml(principalValue)}"
-                  aria-describedby="principal-ajuda"
                   required
+                  aria-describedby="principal-ajuda"
+                  value="${escapeHtml(principalValue)}"
                 />
-                <small id="principal-ajuda">Informe o valor inicial da aplicação.</small>
+                <span class="hint" id="principal-ajuda">Digite o valor inicial do investimento em reais.</span>
               </div>
+
               <div class="field">
                 <label for="taxaMensal">Taxa mensal (%) *</label>
                 <input
@@ -426,12 +444,13 @@ function renderHomePage(url: URL): string {
                   type="text"
                   inputmode="decimal"
                   placeholder="Ex.: 1,50"
-                  value="${escapeHtml(monthlyRateValue)}"
-                  aria-describedby="taxaMensal-ajuda"
                   required
+                  aria-describedby="taxaMensal-ajuda"
+                  value="${escapeHtml(monthlyRateValue)}"
                 />
-                <small id="taxaMensal-ajuda">Use valores positivos ou zero.</small>
+                <span class="hint" id="taxaMensal-ajuda">Informe a taxa de juros mensal em percentual.</span>
               </div>
+
               <div class="field">
                 <label for="meses">Meses *</label>
                 <input
@@ -440,130 +459,103 @@ function renderHomePage(url: URL): string {
                   type="text"
                   inputmode="numeric"
                   placeholder="Ex.: 12"
-                  value="${escapeHtml(monthsValue)}"
-                  aria-describedby="meses-ajuda"
                   required
+                  aria-describedby="meses-ajuda"
+                  value="${escapeHtml(monthsValue)}"
                 />
-                <small id="meses-ajuda">Informe um número inteiro maior que zero.</small>
+                <span class="hint" id="meses-ajuda">Use apenas números inteiros para a quantidade de meses.</span>
               </div>
             </div>
           </fieldset>
-          <p id="status-descricao" class="status" aria-live="polite" aria-atomic="true">${escapeHtml(statusDescription)}</p>
+
           <div class="actions">
             <button type="submit">Calcular</button>
           </div>
         </form>
-        <section aria-label="Resultado da simulação">
+
+        <section class="feedback" aria-label="Resultado da simulação">
+          <h2>Resultado da simulação</h2>
+          <p class="status" id="status-descricao">${escapeHtml(statusDescription)}</p>
           ${resultSection}
           ${errorSection}
         </section>
+
         <p class="footer">${visitMessage}</p>
       </section>
     </main>
     <script>
-      const formulario = document.querySelector("form");
+      const formulario = document.getElementById("form-simulacao");
       const resultado = document.getElementById("resultado");
       const erro = document.getElementById("erro");
       const statusDescricao = document.getElementById("status-descricao");
       const botaoSubmit = formulario?.querySelector('button[type="submit"]');
-      const textoOriginalBotao = botaoSubmit?.textContent ?? "Calcular";
 
       function atualizarStatus(mensagem) {
-        if (statusDescricao) {
-          statusDescricao.textContent = mensagem;
-        }
+        statusDescricao.textContent = mensagem;
       }
 
       function limparErro() {
-        if (!erro) {
-          return;
-        }
-
-        erro.replaceChildren();
+        erro.textContent = "";
         erro.hidden = true;
       }
 
-      function exibirErro(mensagem) {
-        if (!erro) {
-          atualizarStatus(mensagem);
-          console.error("Falha ao exibir erro na interface:", mensagem);
-          return;
-        }
+      function focarErroVisivel() {
+        erro.hidden = false;
+        erro.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        erro.focus();
+      }
 
-        erro.replaceChildren();
+      function exibirErro(mensagem) {
+        erro.textContent = "";
         const paragrafo = document.createElement("p");
         paragrafo.textContent = mensagem;
         erro.appendChild(paragrafo);
-        erro.hidden = false;
-        erro.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        requestAnimationFrame(() => {
-          erro.focus();
-        });
+        focarErroVisivel();
       }
 
       function exibirErros(mensagens) {
-        if (!Array.isArray(mensagens) || mensagens.length === 0) {
-          exibirErro("Ocorreu um erro ao calcular. Tente novamente em instantes.");
-          return;
-        }
-
-        if (!erro) {
-          atualizarStatus(mensagens.join(" "));
-          console.error("Falha ao exibir erros na interface:", mensagens);
-          return;
-        }
-
-        erro.replaceChildren();
+        erro.textContent = "";
         for (const mensagem of mensagens) {
           const paragrafo = document.createElement("p");
-          paragrafo.textContent = String(mensagem);
+          paragrafo.textContent = mensagem;
           erro.appendChild(paragrafo);
         }
-        erro.hidden = false;
-        erro.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        requestAnimationFrame(() => {
-          erro.focus();
-        });
+        focarErroVisivel();
       }
 
       function obterMensagemErro(payload, fallbackStatus) {
         if (!payload || typeof payload !== "object") {
-          return null;
-        }
-
-        if (Array.isArray(payload.errors)) {
-          const mensagens = payload.errors.filter((item) => typeof item === "string" && item.trim() !== "");
-          if (mensagens.length > 0) {
-            return mensagens;
-          }
+          return fallbackStatus;
         }
 
         if (typeof payload.error === "string" && payload.error.trim() !== "") {
-          return [payload.error.trim()];
+          return payload.error.trim();
         }
 
         if (typeof payload.message === "string" && payload.message.trim() !== "") {
-          return [payload.message.trim()];
+          return payload.message.trim();
         }
 
-        return fallbackStatus ? [fallbackStatus] : null;
+        return fallbackStatus;
       }
 
       function obterMensagemErroHttp(status, payload, texto) {
-        const mensagemPayload = obterMensagemErro(payload, null);
-        if (mensagemPayload && mensagemPayload.length > 0) {
+        const textoLimpo = typeof texto === "string" ? texto.trim() : "";
+        const mensagemPayload = obterMensagemErro(payload, "");
+
+        if (mensagemPayload !== "") {
           return mensagemPayload;
         }
 
-        if (status >= 500) {
-          return ["Não foi possível calcular no momento porque o serviço está indisponível. Tente novamente mais tarde."];
+        if (textoLimpo !== "") {
+          return textoLimpo;
         }
 
-        if (status >= 400) {
-          return ["Não foi possível concluir o cálculo. Verifique a mensagem de erro exibida."];
+        if (status === 503) {
+          return "Não foi possível calcular no momento porque o serviço está indisponível. Tente novamente mais tarde.";
         }
 
-        return ["Ocorreu um erro ao calcular. Tente novamente em instantes."];
+        return "Ocorreu um erro ao calcular. Tente novamente em instantes.";
       }
 
       async function lerPayloadJson(resposta) {
@@ -579,96 +571,107 @@ function renderHomePage(url: URL): string {
         }
       }
 
-      formulario?.addEventListener("submit", async (evento) => {
-        evento.preventDefault();
-        limparErro();
-        if (resultado) {
-          resultado.textContent = "";
-        }
-        atualizarStatus("Calculando simulação. Aguarde.");
-        if (botaoSubmit) {
-          botaoSubmit.disabled = true;
-          botaoSubmit.textContent = "Calculando...";
-          botaoSubmit.setAttribute("aria-busy", "true");
-        }
+      if (formulario instanceof HTMLFormElement &&
+        resultado instanceof HTMLOutputElement &&
+        erro instanceof HTMLDivElement &&
+        statusDescricao instanceof HTMLElement &&
+        botaoSubmit instanceof HTMLButtonElement) {
+        formulario.addEventListener("submit", async (event) => {
+          event.preventDefault();
 
-        const formData = new FormData(formulario);
-        const principal = String(formData.get("principal") ?? "");
-        const taxaMensal = String(formData.get("taxaMensal") ?? "");
-        const meses = String(formData.get("meses") ?? "");
-
-        try {
-          const resposta = await fetch("/api/calcular", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-            },
-            body: JSON.stringify({ principal, taxaMensal, meses }),
-          });
-
-          const payload = await lerPayloadJson(resposta);
-          const texto = payload === null ? await resposta.text() : "";
-
-          if (!resposta.ok) {
-            const mensagens = obterMensagemErroHttp(resposta.status, payload, texto);
-            exibirErros(mensagens);
-            atualizarStatus("Não foi possível concluir o cálculo. Verifique a mensagem de erro exibida.");
-            return;
-          }
-
-          const montante = payload && typeof payload.montanteFormatado === "string"
-            ? payload.montanteFormatado
-            : null;
-
-          if (!montante) {
-            exibirErro("Ocorreu um erro ao calcular. Tente novamente em instantes.");
-            atualizarStatus("Não foi possível concluir o cálculo. Verifique a mensagem de erro exibida.");
-            return;
-          }
+          const formData = new FormData(formulario);
+          const principal = String(formData.get("principal") ?? "");
+          const taxaMensal = String(formData.get("taxaMensal") ?? "");
+          const meses = String(formData.get("meses") ?? "");
 
           limparErro();
-          if (resultado) {
-            resultado.innerHTML = `Montante final estimado: <strong>${montante}</strong>.`;
-          }
-          atualizarStatus("Simulação calculada com sucesso. Confira o resultado abaixo.");
-        } catch (error) {
-          const mensagem = error instanceof DOMException && error.name === "AbortError"
-            ? "Não foi possível calcular no momento porque a solicitação expirou ou foi interrompida. Tente novamente."
-            : "Não foi possível calcular no momento por falha de rede. Tente novamente mais tarde.";
-          exibirErro(mensagem);
-          atualizarStatus("Não foi possível concluir o cálculo. Verifique a mensagem de erro exibida.");
-        } finally {
-          if (botaoSubmit) {
+          resultado.textContent = "";
+          atualizarStatus("Calculando a simulação. Aguarde um instante.");
+          formulario.setAttribute("aria-busy", "true");
+          botaoSubmit.disabled = true;
+          botaoSubmit.textContent = "Calculando...";
+
+          try {
+            const resposta = await fetch("/api/calcular", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json; charset=utf-8",
+              },
+              body: JSON.stringify({ principal, taxaMensal, meses }),
+            });
+
+            const payload = await lerPayloadJson(resposta);
+            const texto = payload === null ? await resposta.text() : "";
+
+            if (!resposta.ok) {
+              const mensagem = obterMensagemErroHttp(resposta.status, payload, texto);
+              exibirErro(mensagem);
+              atualizarStatus("Não foi possível concluir o cálculo. Verifique a mensagem de erro exibida.");
+              return;
+            }
+
+            const montante = payload && typeof payload.total === "number"
+              ? payload.total
+              : null;
+
+            if (montante === null) {
+              exibirErro("O cálculo foi concluído, mas a resposta recebida é inválida. Tente novamente em instantes.");
+              atualizarStatus("Não foi possível concluir o cálculo. Verifique a mensagem de erro exibida.");
+              return;
+            }
+
+            limparErro();
+            resultado.textContent = "Montante final estimado: ";
+            const destaque = document.createElement("strong");
+            destaque.textContent = new Intl.NumberFormat("pt-BR", {
+              style: "currency",
+              currency: "BRL",
+            }).format(montante);
+            resultado.appendChild(destaque);
+            resultado.append(".");
+            atualizarStatus("Simulação calculada com sucesso. Confira o resultado abaixo.");
+          } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") {
+              exibirErro("Não foi possível calcular no momento porque a solicitação expirou ou foi interrompida. Tente novamente.");
+            } else if (error instanceof TypeError) {
+              exibirErro("Não foi possível calcular no momento por falha de comunicação. Tente novamente mais tarde.");
+            } else {
+              exibirErro("Não foi possível calcular no momento no navegador. Tente novamente em instantes.");
+            }
+            atualizarStatus("Não foi possível concluir o cálculo. Verifique a mensagem de erro exibida.");
+          } finally {
+            formulario.removeAttribute("aria-busy");
             botaoSubmit.disabled = false;
-            botaoSubmit.textContent = textoOriginalBotao;
-            botaoSubmit.removeAttribute("aria-busy");
+            botaoSubmit.textContent = "Calcular";
             botaoSubmit?.focus();
           }
-        }
-      });
+        });
+      }
     </script>
   </body>
 </html>`;
 }
 
-async function handleCalculate(request: Request): Promise<Response> {
+async function handleApiCalcular(request: Request): Promise<Response> {
   let payload: unknown;
 
   try {
     payload = await request.json();
   } catch {
-    return createJsonResponse(
-      JSON.stringify({
-        error: "Não foi possível interpretar os dados enviados para o cálculo.",
-      }),
+    return createApiErrorResponse(
       400,
+      "Não foi possível interpretar os dados enviados para o cálculo.",
     );
   }
 
-  const body = payload && typeof payload === "object"
-    ? payload as Record<string, unknown>
-    : {};
+  if (!payload || typeof payload !== "object") {
+    return createApiErrorResponse(
+      400,
+      "Envie os dados da simulação em formato JSON válido.",
+    );
+  }
 
+  const body = payload as Record<string, unknown>;
   const principalValue = String(body.principal ?? "");
   const monthlyRateValue = String(body.taxaMensal ?? "");
   const monthsValue = String(body.meses ?? "");
@@ -695,44 +698,23 @@ async function handleCalculate(request: Request): Promise<Response> {
     validation.months as number,
   );
 
-  return createJsonResponse(
-    JSON.stringify({
-      montante: total,
-      montanteFormatado: formatCurrency(total),
-    }),
-    200,
-  );
+  return createJsonResponse(JSON.stringify({ total }), 200);
 }
 
 export async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
+  if (request.method === "POST" && url.pathname === "/api/calcular") {
+    return await handleApiCalcular(request);
+  }
+
   if (request.method === "GET" && url.pathname === "/") {
-    counter.increment();
     return new Response(renderHomePage(url), {
       status: 200,
       headers: {
         "content-type": "text/html; charset=utf-8",
       },
     });
-  }
-
-  if (request.method === "GET" && url.pathname === "/health") {
-    return createJsonResponse(JSON.stringify({ ok: true }), 200);
-  }
-
-  if (request.method === "GET" && url.pathname === "/api/visits") {
-    return createJsonResponse(
-      JSON.stringify({
-        visits: counter.value(),
-        message: formatCounterMessage(counter.value()),
-      }),
-      200,
-    );
-  }
-
-  if (request.method === "POST" && url.pathname === "/api/calcular") {
-    return await handleCalculate(request);
   }
 
   return new Response("Not Found", { status: 404 });

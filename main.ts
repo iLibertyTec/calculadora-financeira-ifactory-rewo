@@ -1,6 +1,49 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
+import { calcularJurosCompostos } from "./src/financeiro.ts";
+import {
+  validarJurosCompostosRequest,
+  type JurosCompostosRequest,
+} from "./src/juros_compostos_request.ts";
 
 const counter = new VisitCounter();
+
+function jsonError(message: string, status: number = 400): Response {
+  return Response.json({ erro: message }, { status });
+}
+
+function methodNotAllowed(allow: string): Response {
+  return new Response(JSON.stringify({ erro: "Método não permitido." }), {
+    status: 405,
+    headers: {
+      "content-type": "application/json",
+      "allow": allow,
+    },
+  });
+}
+
+function roundTo(value: number, decimals: number): number {
+  return Number(value.toFixed(decimals));
+}
+
+async function parseJurosCompostosRequest(
+  req: Request,
+): Promise<JurosCompostosRequest | Response> {
+  let body: unknown;
+
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError("JSON inválido.", 400);
+  }
+
+  const result = validarJurosCompostosRequest(body);
+
+  if (!result.success) {
+    return jsonError(result.error, 400);
+  }
+
+  return result.data;
+}
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -10,6 +53,26 @@ export async function handler(req: Request): Promise<Response> {
       ok: true,
       service: "ifactory-product",
       version: "0.1.0",
+    });
+  }
+
+  if (url.pathname === "/api/juros-compostos") {
+    if (req.method !== "POST") {
+      return methodNotAllowed("POST");
+    }
+
+    const parsed = await parseJurosCompostosRequest(req);
+
+    if (parsed instanceof Response) {
+      return parsed;
+    }
+
+    const { principal, taxaMensal, meses } = parsed;
+    const resultado = calcularJurosCompostos(principal, taxaMensal, meses);
+
+    return Response.json({
+      montante: roundTo(resultado.montante, 3),
+      jurosTotais: roundTo(resultado.jurosTotais, 3),
     });
   }
 

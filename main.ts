@@ -1,7 +1,4 @@
-import { formatCounterMessage, VisitCounter } from "./counter.ts";
 import { calcularJurosCompostos } from "./src/juros_compostos.ts";
-
-const counter = new VisitCounter();
 
 const JUROS_COMPOSTOS_FIELDS = ["capitalInicial", "taxa", "periodos"] as const;
 
@@ -23,8 +20,18 @@ type ValidationResult =
     errors: Record<string, string>;
   };
 
+type VisitsState = {
+  visits: number;
+  uniqueVisitors: number;
+};
+
+const visitsState: VisitsState = {
+  visits: 0,
+  uniqueVisitors: 0,
+};
+
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
-  const headers = new Headers(init?.headers);
+  const headers: Headers = new Headers(init?.headers);
 
   if (!headers.has("content-type")) {
     headers.set("content-type", "application/json; charset=utf-8");
@@ -36,14 +43,28 @@ function jsonResponse(body: unknown, init?: ResponseInit): Response {
   });
 }
 
+function htmlResponse(body: string, init?: ResponseInit): Response {
+  const headers: Headers = new Headers(init?.headers);
+
+  if (!headers.has("content-type")) {
+    headers.set("content-type", "text/html; charset=utf-8");
+  }
+
+  return new Response(body, {
+    ...init,
+    headers,
+  });
+}
+
 function hasJsonContentType(req: Request): boolean {
-  const contentType = req.headers.get("content-type");
+  const contentType: string | null = req.headers.get("content-type");
 
   if (!contentType) {
     return false;
   }
 
-  const mimeType = contentType.split(";", 1)[0]?.trim().toLowerCase();
+  const mimeType: string | undefined = contentType.split(";", 1)[0]?.trim()
+    .toLowerCase();
 
   return mimeType === "application/json";
 }
@@ -58,7 +79,7 @@ function validateJurosCompostosPayload(value: unknown): ValidationResult {
     };
   }
 
-  const payload = value as Record<string, unknown>;
+  const payload: Record<string, unknown> = value as Record<string, unknown>;
   const errors: Record<string, string> = {};
 
   for (const key of Object.keys(payload)) {
@@ -113,10 +134,270 @@ function validateJurosCompostosPayload(value: unknown): ValidationResult {
   };
 }
 
+function renderHomePage(): string {
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Calculadora Financeira iFactory</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b1020;
+        --panel: #151c33;
+        --panel-border: rgba(255, 255, 255, 0.08);
+        --text: #ecf1ff;
+        --muted: #afbad6;
+        --accent: #7cb2ff;
+        --accent-strong: #4c8dff;
+        --code-bg: rgba(124, 178, 255, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: linear-gradient(180deg, #0b1020 0%, #121a30 100%);
+        color: var(--text);
+      }
+
+      a {
+        color: var(--accent);
+      }
+
+      .skip-link {
+        position: absolute;
+        left: 16px;
+        top: -48px;
+        background: var(--accent-strong);
+        color: white;
+        padding: 10px 14px;
+        border-radius: 10px;
+        text-decoration: none;
+        z-index: 10;
+      }
+
+      .skip-link:focus {
+        top: 16px;
+      }
+
+      main {
+        width: min(960px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 48px 0 64px;
+      }
+
+      .hero,
+      .section {
+        background: var(--panel);
+        border: 1px solid var(--panel-border);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+      }
+
+      .hero {
+        margin-bottom: 24px;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        margin-bottom: 12px;
+        color: var(--accent);
+        font-size: 0.85rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      h1,
+      h2,
+      h3 {
+        margin: 0 0 12px;
+        line-height: 1.2;
+      }
+
+      h1 {
+        font-size: clamp(2rem, 4vw, 3rem);
+      }
+
+      h2 {
+        font-size: 1.3rem;
+      }
+
+      h3 {
+        font-size: 1.05rem;
+      }
+
+      p,
+      li {
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 24px;
+        margin-top: 24px;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+        margin-top: 20px;
+      }
+
+      .step,
+      .card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--panel-border);
+        border-radius: 16px;
+        padding: 18px;
+      }
+
+      .cta {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 18px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: var(--accent-strong);
+        color: white;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      code,
+      pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      }
+
+      pre {
+        margin: 16px 0 0;
+        padding: 18px;
+        overflow-x: auto;
+        border-radius: 16px;
+        background: var(--code-bg);
+        border: 1px solid rgba(124, 178, 255, 0.2);
+        color: var(--text);
+      }
+
+      .note {
+        margin-top: 14px;
+        font-size: 0.95rem;
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip-link" href="#conteudo-principal">Pular para o conteúdo principal</a>
+    <main id="conteudo-principal" tabindex="-1">
+      <section class="hero" aria-labelledby="titulo-principal">
+        <span class="eyebrow">iFactory</span>
+        <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
+        <p>
+          Uma API simples para demonstrar cálculos de juros compostos com validação
+          de entrada e respostas em JSON, pronta para testes, integração e evolução.
+        </p>
+        <a class="cta" href="#como-usar">Ver como usar</a>
+      </section>
+
+      <section class="section" id="como-usar" aria-labelledby="subtitulo-como-usar">
+        <h2 id="subtitulo-como-usar">Como usar</h2>
+        <div class="steps">
+          <div class="step">
+            <h3>1. Envie os dados</h3>
+            <p>Informe <code>capitalInicial</code>, <code>taxa</code> e <code>periodos</code> em JSON.</p>
+          </div>
+          <div class="step">
+            <h3>2. Chame a API</h3>
+            <p>Faça uma requisição <code>POST /api/juros-compostos</code> com <code>content-type: application/json</code>.</p>
+          </div>
+          <div class="step">
+            <h3>3. Receba o montante</h3>
+            <p>A resposta retorna os dados informados e o valor calculado de <code>montante</code>.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid">
+        <section class="section" aria-labelledby="subtitulo-exemplo">
+          <h2 id="subtitulo-exemplo">Exemplo de requisição</h2>
+          <pre>POST /api/juros-compostos
+content-type: application/json
+
+{
+  "capitalInicial": 1000,
+  "taxa": 0.1,
+  "periodos": 2
+}</pre>
+          <p class="note">O exemplo abaixo é estático e serve apenas para ilustrar a operação da API na home.</p>
+        </section>
+
+        <section class="section" aria-labelledby="subtitulo-retorno">
+          <h2 id="subtitulo-retorno">Exemplo de resposta</h2>
+          <pre>{
+  "capitalInicial": 1000,
+  "taxa": 0.1,
+  "periodos": 2,
+  "montante": 1210
+}</pre>
+          <p class="note">Neste cenário, o montante = 1210 após aplicar juros compostos por 2 períodos.</p>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>`;
+}
+
+function getVisitsResponseBody(): {
+  visits: number;
+  uniqueVisitors: number;
+  message: string;
+} {
+  return {
+    visits: visitsState.visits,
+    uniqueVisitors: visitsState.uniqueVisitors,
+    message: "Visit registered successfully",
+  };
+}
+
 export async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
+  const url: URL = new URL(req.url);
+
+  if (url.pathname === "/") {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      return jsonResponse(
+        { error: "method not allowed" },
+        { status: 405, headers: { allow: "GET, HEAD" } },
+      );
+    }
+
+    if (req.method === "HEAD") {
+      return htmlResponse("", { status: 200 });
+    }
+
+    return htmlResponse(renderHomePage());
+  }
 
   if (url.pathname === "/health") {
+    if (req.method !== "GET") {
+      return jsonResponse(
+        { error: "method not allowed" },
+        { status: 405, headers: { allow: "GET" } },
+      );
+    }
+
     return jsonResponse({
       ok: true,
       service: "ifactory-product",
@@ -124,7 +405,31 @@ export async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (url.pathname === "/api/juros-compostos" && req.method === "POST") {
+  if (url.pathname === "/api/visits") {
+    if (req.method === "GET") {
+      return jsonResponse(getVisitsResponseBody());
+    }
+
+    if (req.method === "POST") {
+      visitsState.visits += 1;
+      visitsState.uniqueVisitors += 1;
+      return jsonResponse(getVisitsResponseBody());
+    }
+
+    return jsonResponse(
+      { error: "method not allowed" },
+      { status: 405, headers: { allow: "GET, POST" } },
+    );
+  }
+
+  if (url.pathname === "/api/juros-compostos") {
+    if (req.method !== "POST") {
+      return jsonResponse(
+        { error: "method not allowed" },
+        { status: 405, headers: { allow: "POST" } },
+      );
+    }
+
     if (!hasJsonContentType(req)) {
       return jsonResponse(
         { error: "unsupported media type" },
@@ -143,17 +448,20 @@ export async function handler(req: Request): Promise<Response> {
       );
     }
 
-    const validation = validateJurosCompostosPayload(body);
+    const validation: ValidationResult = validateJurosCompostosPayload(body);
 
     if (!validation.ok) {
       return jsonResponse(
-        { error: "invalid payload", details: validation.errors },
+        {
+          error: "validation failed",
+          fields: validation.errors,
+        },
         { status: 400 },
       );
     }
 
     const { capitalInicial, taxa, periodos } = validation.payload;
-    const montante = calcularJurosCompostos(
+    const montante: number = calcularJurosCompostos(
       capitalInicial,
       taxa,
       periodos,
@@ -164,92 +472,6 @@ export async function handler(req: Request): Promise<Response> {
       taxa,
       periodos,
       montante,
-    });
-  }
-
-  if (url.pathname === "/api/juros-compostos") {
-    return jsonResponse(
-      { error: "method not allowed" },
-      {
-        status: 405,
-        headers: {
-          allow: "POST",
-        },
-      },
-    );
-  }
-
-  if (url.pathname === "/api/visits" && req.method === "GET") {
-    return jsonResponse(counter.state);
-  }
-
-  if (url.pathname === "/api/visits" && req.method === "POST") {
-    const body = req.headers.get("content-type")?.includes("json")
-      ? await req.json().catch(() => ({}))
-      : {};
-    const visitorId = typeof body.visitorId === "string"
-      ? body.visitorId
-      : undefined;
-    const state = counter.recordVisit(visitorId);
-    return jsonResponse({
-      ...state,
-      message: formatCounterMessage(state),
-    });
-  }
-
-  if (url.pathname === "/") {
-    const html = `<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>iFactory Product — Visit Analytics</title>
-<style>
-:root{--bg:#080b17;--panel:#141b34;--ink:#eaeefa;--mut:#8b95b8;--accent:#4c8dff}
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;display:grid;place-items:center}
-.card{background:var(--panel);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:36px;text-align:center;max-width:420px;width:90%}
-h1{font-size:1.35rem;margin-bottom:8px}
-p{color:var(--mut);font-size:.9rem;margin-bottom:20px}
-#count{font-size:3rem;font-weight:700;color:var(--accent);margin:12px 0}
-button{background:var(--accent);color:#fff;border:none;padding:12px 24px;border-radius:10px;font-weight:600;cursor:pointer}
-.badge{display:inline-block;margin-top:16px;font-size:.75rem;color:var(--mut)}
-</style></head>
-<body><div class="card">
-<h1>Visit Analytics</h1>
-<p>Evolved by the iFactory autonomous team.</p>
-<div id="count">0</div>
-<p id="msg"></p>
-<button id="btn">Registrar visita</button>
-<div class="badge">API: <code>/api/visits</code></div>
-</div>
-<script>
-const count = document.getElementById('count');
-const msg = document.getElementById('msg');
-const btn = document.getElementById('btn');
-const visitorKey = 'ifactory_visitor_id';
-let visitorId = localStorage.getItem(visitorKey);
-if (!visitorId) {
-  visitorId = crypto.randomUUID();
-  localStorage.setItem(visitorKey, visitorId);
-}
-async function refresh() {
-  const res = await fetch('/api/visits');
-  const data = await res.json();
-  count.textContent = data.visits;
-  msg.textContent = data.uniqueVisitors + ' visitantes únicos';
-}
-btn.addEventListener('click', async () => {
-  const res = await fetch('/api/visits', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ visitorId }),
-  });
-  const data = await res.json();
-  count.textContent = data.visits;
-  msg.textContent = data.message;
-});
-refresh();
-</script></body></html>`;
-    return new Response(html, {
-      headers: { "content-type": "text/html; charset=utf-8" },
     });
   }
 

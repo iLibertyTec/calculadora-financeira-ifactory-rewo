@@ -33,7 +33,7 @@ deno.test("POST /api/juros-compostos responde 200 com montante e jurosTotais", a
   assertEquals(response.headers.get("content-type"), "application/json");
   assertEquals(await response.json(), {
     montante: 1030.301,
-    jurosTotais: 30.301000000000045,
+    jurosTotais: 30.301,
   });
 });
 
@@ -47,6 +47,7 @@ deno.test("POST /api/juros-compostos com JSON inválido responde 400", async () 
   );
 
   assertEquals(response.status, 400);
+  assertEquals(response.headers.get("content-type"), "application/json");
   assertEquals(await response.json(), { erro: "JSON inválido." });
 });
 
@@ -63,6 +64,7 @@ deno.test("POST /api/juros-compostos com campos ausentes responde 400", async ()
   );
 
   assertEquals(response.status, 400);
+  assertEquals(response.headers.get("content-type"), "application/json");
   assertEquals(await response.json(), {
     erro: "Campos obrigatórios ausentes: meses.",
   });
@@ -82,6 +84,7 @@ deno.test("POST /api/juros-compostos com valores não numéricos responde 400", 
   );
 
   assertEquals(response.status, 400);
+  assertEquals(response.headers.get("content-type"), "application/json");
   assertEquals(await response.json(), {
     erro: "Os campos principal, taxaMensal e meses devem ser numéricos.",
   });

@@ -7,8 +7,12 @@ import {
 
 const counter = new VisitCounter();
 
-function jsonError(message: string, status = 400): Response {
+function jsonError(message: string, status: number = 400): Response {
   return Response.json({ erro: message }, { status });
+}
+
+function roundTo(value: number, decimals: number): number {
+  return Number(value.toFixed(decimals));
 }
 
 async function parseJurosCompostosRequest(
@@ -19,13 +23,13 @@ async function parseJurosCompostosRequest(
   try {
     body = await req.json();
   } catch {
-    return jsonError("JSON inválido.");
+    return jsonError("JSON inválido.", 400);
   }
 
   const result = validarJurosCompostosRequest(body);
 
   if (!result.success) {
-    return jsonError(result.error);
+    return jsonError(result.error, 400);
   }
 
   return result.data;
@@ -52,7 +56,10 @@ export async function handler(req: Request): Promise<Response> {
     const { principal, taxaMensal, meses } = parsed;
     const resultado = calcularJurosCompostos(principal, taxaMensal, meses);
 
-    return Response.json(resultado);
+    return Response.json({
+      montante: roundTo(resultado.montante, 3),
+      jurosTotais: roundTo(resultado.jurosTotais, 3),
+    });
   }
 
   if (url.pathname === "/api/visits" && req.method === "GET") {

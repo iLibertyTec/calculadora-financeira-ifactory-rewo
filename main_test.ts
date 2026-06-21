@@ -84,3 +84,21 @@ Deno.test("handler retorna 405 para método incorreto em /api/juros-compostos", 
     error: "method not allowed",
   });
 });
+
+Deno.test("handler mantém GET /api/visits funcionando", async () => {
+  const response = await handler(new Request("http://localhost/api/visits"));
+
+  assertEquals(response.status, 200);
+  assertObjectMatch(await response.json(), {
+    visits: 0,
+  });
+});
+
+Deno.test("handler retorna 404 para rota desconhecida", async () => {
+  const response = await handler(new Request("http://localhost/nao-existe"));
+
+  assertEquals(response.status, 404);
+  assertObjectMatch(await response.json(), {
+    error: "not found",
+  });
+});

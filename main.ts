@@ -1,20 +1,186 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
+import { calcularJurosCompostos } from "./src/juros_compostos.ts";
 
 const counter = new VisitCounter();
+
+const JUROS_COMPOSTOS_FIELDS = ["capitalInicial", "taxa", "periodos"] as const;
+
+type JurosCompostosField = typeof JUROS_COMPOSTOS_FIELDS[number];
+
+type JurosCompostosPayload = {
+  capitalInicial: number;
+  taxa: number;
+  periodos: number;
+};
+
+type ValidationResult =
+  | {
+    ok: true;
+    payload: JurosCompostosPayload;
+  }
+  | {
+    ok: false;
+    errors: Record<string, string>;
+  };
+
+function jsonResponse(body: unknown, init?: ResponseInit): Response {
+  const headers = new Headers(init?.headers);
+
+  if (!headers.has("content-type")) {
+    headers.set("content-type", "application/json; charset=utf-8");
+  }
+
+  return new Response(JSON.stringify(body), {
+    ...init,
+    headers,
+  });
+}
+
+function hasJsonContentType(req: Request): boolean {
+  const contentType = req.headers.get("content-type");
+
+  if (!contentType) {
+    return false;
+  }
+
+  const mimeType = contentType.split(";", 1)[0]?.trim().toLowerCase();
+
+  return mimeType === "application/json";
+}
+
+function validateJurosCompostosPayload(value: unknown): ValidationResult {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return {
+      ok: false,
+      errors: {
+        body: "must be an object",
+      },
+    };
+  }
+
+  const payload = value as Record<string, unknown>;
+  const errors: Record<string, string> = {};
+
+  for (const key of Object.keys(payload)) {
+    if (!JUROS_COMPOSTOS_FIELDS.includes(key as JurosCompostosField)) {
+      errors[key] = "is not allowed";
+    }
+  }
+
+  if (!("capitalInicial" in payload)) {
+    errors.capitalInicial = "is required";
+  } else if (
+    typeof payload.capitalInicial !== "number" ||
+    !Number.isFinite(payload.capitalInicial)
+  ) {
+    errors.capitalInicial = "must be a finite number";
+  }
+
+  if (!("taxa" in payload)) {
+    errors.taxa = "is required";
+  } else if (
+    typeof payload.taxa !== "number" ||
+    !Number.isFinite(payload.taxa)
+  ) {
+    errors.taxa = "must be a finite number";
+  }
+
+  if (!("periodos" in payload)) {
+    errors.periodos = "is required";
+  } else if (
+    typeof payload.periodos !== "number" ||
+    !Number.isFinite(payload.periodos)
+  ) {
+    errors.periodos = "must be a finite number";
+  } else if (!Number.isInteger(payload.periodos)) {
+    errors.periodos = "must be an integer";
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      ok: false,
+      errors,
+    };
+  }
+
+  return {
+    ok: true,
+    payload: {
+      capitalInicial: payload.capitalInicial as number,
+      taxa: payload.taxa as number,
+      periodos: payload.periodos as number,
+    },
+  };
+}
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
 
   if (url.pathname === "/health") {
-    return Response.json({
+    return jsonResponse({
       ok: true,
       service: "ifactory-product",
       version: "0.1.0",
     });
   }
 
+  if (url.pathname === "/api/juros-compostos" && req.method === "POST") {
+    if (!hasJsonContentType(req)) {
+      return jsonResponse(
+        { error: "unsupported media type" },
+        { status: 415 },
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = await req.json();
+    } catch {
+      return jsonResponse(
+        { error: "invalid json" },
+        { status: 400 },
+      );
+    }
+
+    const validation = validateJurosCompostosPayload(body);
+
+    if (!validation.ok) {
+      return jsonResponse(
+        { error: "invalid payload", details: validation.errors },
+        { status: 400 },
+      );
+    }
+
+    const { capitalInicial, taxa, periodos } = validation.payload;
+    const montante = calcularJurosCompostos(
+      capitalInicial,
+      taxa,
+      periodos,
+    );
+
+    return jsonResponse({
+      capitalInicial,
+      taxa,
+      periodos,
+      montante,
+    });
+  }
+
+  if (url.pathname === "/api/juros-compostos") {
+    return jsonResponse(
+      { error: "method not allowed" },
+      {
+        status: 405,
+        headers: {
+          allow: "POST",
+        },
+      },
+    );
+  }
+
   if (url.pathname === "/api/visits" && req.method === "GET") {
-    return Response.json(counter.state);
+    return jsonResponse(counter.state);
   }
 
   if (url.pathname === "/api/visits" && req.method === "POST") {
@@ -25,7 +191,7 @@ export async function handler(req: Request): Promise<Response> {
       ? body.visitorId
       : undefined;
     const state = counter.recordVisit(visitorId);
-    return Response.json({
+    return jsonResponse({
       ...state,
       message: formatCounterMessage(state),
     });
@@ -52,12 +218,34 @@ button{background:var(--accent);color:#fff;border:none;padding:12px 24px;border-
 <div id="count">0</div>
 <p id="msg"></p>
 <button id="btn">Registrar visita</button>
-<div class="badge">iFactory Product · Deno Deploy</div>
+<div class="badge">API: <code>/api/visits</code></div>
 </div>
 <script>
-const countEl=document.getElementById('count'),msgEl=document.getElementById('msg');
-async function refresh(){const r=await fetch('/api/visits');const d=await r.json();countEl.textContent=d.visits;msgEl.textContent=d.lastVisitor?'Último: '+d.lastVisitor:''}
-document.getElementById('btn').onclick=async()=>{await fetch('/api/visits',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitorId:'browser'})});refresh()};
+const count = document.getElementById('count');
+const msg = document.getElementById('msg');
+const btn = document.getElementById('btn');
+const visitorKey = 'ifactory_visitor_id';
+let visitorId = localStorage.getItem(visitorKey);
+if (!visitorId) {
+  visitorId = crypto.randomUUID();
+  localStorage.setItem(visitorKey, visitorId);
+}
+async function refresh() {
+  const res = await fetch('/api/visits');
+  const data = await res.json();
+  count.textContent = data.visits;
+  msg.textContent = data.uniqueVisitors + ' visitantes únicos';
+}
+btn.addEventListener('click', async () => {
+  const res = await fetch('/api/visits', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ visitorId }),
+  });
+  const data = await res.json();
+  count.textContent = data.visits;
+  msg.textContent = data.message;
+});
 refresh();
 </script></body></html>`;
     return new Response(html, {
@@ -65,11 +253,9 @@ refresh();
     });
   }
 
-  return Response.json({ error: "not found" }, { status: 404 });
+  return jsonResponse({ error: "not found" }, { status: 404 });
 }
 
 if (import.meta.main) {
-  const port = Number(Deno.env.get("PORT") ?? 8000);
-  console.log(`iFactory Product on http://localhost:${port}`);
-  Deno.serve({ port }, handler);
+  Deno.serve(handler);
 }

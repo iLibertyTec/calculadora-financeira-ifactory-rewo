@@ -18,6 +18,7 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
     body,
     /grid-template-columns: repeat\(auto-fit, minmax\(180px, 1fr\)\);/,
   );
+  assertMatch(body, /\[hidden\]\s*\{/);
   assertMatch(body, /output,\s*\[role="alert"\]\s*\{/);
   assertMatch(body, /display: block;/);
   assertMatch(body, /word-break: break-word;/);
@@ -98,6 +99,10 @@ Deno.test("GET / exibe erros de validação quando necessário", async () => {
   assertMatch(
     body,
     /Informe a quantidade de meses com número inteiro maior que zero\./,
+  );
+  assertMatch(
+    body,
+    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert"><p>Informe um valor principal maior que zero\.<\/p>/,
   );
   assertNotMatch(body, /role="alert" hidden/);
 });

@@ -129,7 +129,7 @@ function renderHomePage(url: URL): string {
         --accent: #1d4ed8;
         --accent-strong: #173ea6;
         --accent-soft: #dbeafe;
-        --success-ink: #14532d;
+        --success-ink: #166534;
         --success-bg: #ecfdf3;
         --success-border: #86efac;
         --danger: #991b1b;
@@ -140,6 +140,10 @@ function renderHomePage(url: URL): string {
 
       * {
         box-sizing: border-box;
+      }
+
+      [hidden] {
+        display: none;
       }
 
       html {
@@ -199,7 +203,7 @@ function renderHomePage(url: URL): string {
 
       form {
         display: grid;
-        gap: 20px;
+        gap: 16px;
       }
 
       fieldset {
@@ -234,10 +238,8 @@ function renderHomePage(url: URL): string {
         color: var(--ink);
       }
 
-      .hint,
-      .status {
-        margin: 0;
-        font-size: 0.95rem;
+      .help {
+        font-size: 0.9rem;
         color: var(--muted);
       }
 
@@ -252,20 +254,16 @@ function renderHomePage(url: URL): string {
         background: #ffffff;
       }
 
-      input::placeholder {
-        color: #6b7280;
-      }
-
       input:focus {
-        outline: 3px solid rgba(29, 78, 216, 0.18);
-        outline-offset: 1px;
+        outline: 3px solid rgba(29, 78, 216, 0.2);
         border-color: var(--accent);
       }
 
       .actions {
         display: flex;
-        flex-wrap: wrap;
+        flex-direction: column;
         gap: 12px;
+        align-items: flex-start;
       }
 
       button {
@@ -275,53 +273,49 @@ function renderHomePage(url: URL): string {
         padding: 14px 20px;
         font: inherit;
         font-weight: 700;
-        background: var(--accent-strong);
         color: #ffffff;
-        cursor: pointer;
-        transition: background-color 0.2s ease, transform 0.2s ease;
-      }
-
-      button:hover,
-      button:focus-visible {
         background: var(--accent);
-      }
-
-      button:focus-visible {
-        outline: 3px solid rgba(29, 78, 216, 0.22);
-        outline-offset: 2px;
+        cursor: pointer;
+        transition: background-color 0.2s ease;
       }
 
       button:hover {
-        transform: translateY(-1px);
+        background: var(--accent-strong);
+      }
+
+      button:focus-visible {
+        outline: 3px solid rgba(29, 78, 216, 0.25);
+        outline-offset: 2px;
+      }
+
+      .feedback {
+        display: grid;
+        gap: 12px;
       }
 
       output,
       [role="alert"] {
         display: block;
-        margin: 0;
         padding: 16px 18px;
         border-radius: 14px;
         border: 1px solid var(--border);
         word-break: break-word;
-        overflow-wrap: anywhere;
       }
 
       #resultado {
+        color: var(--success-ink);
         background: var(--success-bg);
         border-color: var(--success-border);
-        color: var(--success-ink);
-        font-weight: 600;
       }
 
       #resultado strong {
-        color: #166534;
-        font-size: 1.05em;
+        color: #14532d;
       }
 
       #erro {
+        color: var(--danger);
         background: var(--danger-bg);
         border-color: var(--danger-border);
-        color: var(--danger);
       }
 
       #erro p {
@@ -333,14 +327,17 @@ function renderHomePage(url: URL): string {
         margin-top: 8px;
       }
 
-      .panel {
-        display: grid;
-        gap: 12px;
+      .meta {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        font-size: 0.95rem;
+        color: var(--muted);
       }
 
       @media (max-width: 900px) {
         .card {
-          max-width: 100%;
+          max-width: 680px;
         }
       }
 
@@ -351,11 +348,16 @@ function renderHomePage(url: URL): string {
 
         .card {
           padding: 24px;
-          border-radius: 18px;
+          border-radius: 16px;
         }
 
         fieldset {
           padding: 16px;
+        }
+
+        input,
+        button {
+          padding: 13px 14px;
         }
       }
 
@@ -366,42 +368,21 @@ function renderHomePage(url: URL): string {
 
         .card {
           padding: 18px;
-          border-radius: 16px;
         }
 
-        fieldset {
-          padding: 14px;
-        }
-
-        .grid,
-        form,
-        .panel {
-          gap: 12px;
-        }
-
-        output,
-        [role="alert"] {
-          padding: 14px;
-          font-size: 0.95rem;
-        }
-
-        button {
-          width: 100%;
+        .grid {
+          grid-template-columns: 1fr;
         }
       }
     </style>
   </head>
   <body>
     <main>
-      <section class="card" aria-labelledby="titulo-pagina">
+      <section class="card" aria-labelledby="titulo-principal">
         <div class="eyebrow">iFactory • Simulação financeira</div>
-        <h1 id="titulo-pagina">Calculadora de juros compostos</h1>
-        <p>
-          Compare cenários de crescimento com uma interface simples, legível e pronta
-          para uso em desktop ou celular.
-        </p>
+        <h1 id="titulo-principal">Calculadora de juros compostos</h1>
+        <p id="status-descricao">${escapeHtml(statusDescription)}</p>
         <form method="get" action="/" aria-describedby="status-descricao">
-          <p id="status-descricao" class="status">${escapeHtml(statusDescription)}</p>
           <fieldset>
             <legend>Dados da simulação</legend>
             <div class="grid">
@@ -417,7 +398,7 @@ function renderHomePage(url: URL): string {
                   aria-describedby="principal-ajuda"
                   required
                 />
-                <p id="principal-ajuda" class="hint">Informe o valor inicial da aplicação.</p>
+                <span id="principal-ajuda" class="help">Informe o valor inicial aplicado.</span>
               </div>
               <div class="field">
                 <label for="taxaMensal">Taxa mensal (%) *</label>
@@ -431,7 +412,7 @@ function renderHomePage(url: URL): string {
                   aria-describedby="taxaMensal-ajuda"
                   required
                 />
-                <p id="taxaMensal-ajuda" class="hint">Use percentual mensal, com ponto ou vírgula.</p>
+                <span id="taxaMensal-ajuda" class="help">Use percentual mensal, como 1,5 para 1,5%.</span>
               </div>
               <div class="field">
                 <label for="meses">Meses *</label>
@@ -445,34 +426,30 @@ function renderHomePage(url: URL): string {
                   aria-describedby="meses-ajuda"
                   required
                 />
-                <p id="meses-ajuda" class="hint">Digite um número inteiro maior que zero.</p>
+                <span id="meses-ajuda" class="help">Digite a duração da simulação em meses inteiros.</span>
               </div>
             </div>
           </fieldset>
           <div class="actions">
             <button type="submit">Calcular</button>
           </div>
-          <section class="panel" aria-labelledby="resultado-titulo">
-            <h2 id="resultado-titulo">Resultado da simulação</h2>
+          <div class="feedback" aria-label="Resultado da simulação">
             ${resultSection}
             ${errorSection}
-          </section>
+          </div>
         </form>
+        <div class="meta">${escapeHtml(formatCounterMessage(counter.current()))}</div>
       </section>
     </main>
   </body>
 </html>`;
 }
 
-export async function handler(request: Request): Promise<Response> {
+export function handler(request: Request): Response | Promise<Response> {
   const url = new URL(request.url);
 
   if (url.pathname === "/health") {
-    return new Response('{"ok":true}', {
-      headers: {
-        "content-type": "application/json; charset=utf-8",
-      },
-    });
+    return Response.json({ ok: true });
   }
 
   if (url.pathname === "/api/visits") {
@@ -485,6 +462,7 @@ export async function handler(request: Request): Promise<Response> {
 
   if (url.pathname === "/") {
     return new Response(renderHomePage(url), {
+      status: 200,
       headers: {
         "content-type": "text/html; charset=utf-8",
       },

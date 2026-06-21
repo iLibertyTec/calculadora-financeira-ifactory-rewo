@@ -105,6 +105,8 @@ Deno.test("GET / contém JavaScript puro para submit sem recarregar", async () =
   assertMatch(body, /meses: mesesInput\.value/);
   assertMatch(body, /statusDescricao\.textContent = "Calculando simulação\.\.\.";/);
   assertMatch(body, /botao\.disabled = true;/);
+  assertMatch(body, /paragraph\.textContent = message;/);
+  assertMatch(body, /form\.submit\(\);/);
 });
 
 Deno.test("POST /api/juros-compostos retorna cálculo em JSON", async () => {
@@ -131,6 +133,42 @@ Deno.test("POST /api/juros-compostos retorna cálculo em JSON", async () => {
   );
   assertEquals(typeof body.montante, "number");
   assertMatch(body.montanteFormatado, /R\$/);
+});
+
+Deno.test("POST /api/juros-compostos rejeita content-type inválido", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: {
+        "content-type": "text/plain",
+      },
+      body: "principal=1000",
+    }),
+  );
+
+  const body = await response.json();
+
+  assertEquals(response.status, 400);
+  assertEquals(body.error, "Envie o corpo da requisição em JSON.");
+  assertEquals(body.errors[0], "Envie o corpo da requisição em JSON.");
+});
+
+Deno.test("POST /api/juros-compostos rejeita JSON inválido", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: "{",
+    }),
+  );
+
+  const body = await response.json();
+
+  assertEquals(response.status, 400);
+  assertEquals(body.error, "JSON inválido no corpo da requisição.");
+  assertEquals(body.errors[0], "JSON inválido no corpo da requisição.");
 });
 
 Deno.test("GET / não referencia frameworks ou dependências externas", async () => {

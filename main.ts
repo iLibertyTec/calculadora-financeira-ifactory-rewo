@@ -56,6 +56,39 @@ function calculateCompoundAmount(
   return principal * (1 + rate) ** months;
 }
 
+function validateSimulationInput(
+  principalValue: string,
+  monthlyRateValue: string,
+  monthsValue: string,
+): {
+  errors: string[];
+  principal: number | null;
+  monthlyRate: number | null;
+  months: number | null;
+} {
+  const principal = parseDecimal(principalValue);
+  const monthlyRate = parseDecimal(monthlyRateValue);
+  const months = parseInteger(monthsValue);
+
+  const errors: string[] = [];
+
+  if (principal === null || principal <= 0) {
+    errors.push("Informe um valor principal maior que zero.");
+  }
+
+  if (monthlyRate === null || monthlyRate < 0) {
+    errors.push("Informe uma taxa mensal válida, igual ou maior que zero.");
+  }
+
+  if (months === null || months <= 0) {
+    errors.push(
+      "Informe a quantidade de meses com número inteiro maior que zero.",
+    );
+  }
+
+  return { errors, principal, monthlyRate, months };
+}
+
 function renderHomePage(url: URL): string {
   const principalValue = url.searchParams.get("principal") ?? "";
   const monthlyRateValue = url.searchParams.get("taxaMensal") ?? "";
@@ -70,33 +103,24 @@ function renderHomePage(url: URL): string {
     principalValue !== "" || monthlyRateValue !== "" || monthsValue !== "";
 
   if (hasSubmitted) {
-    const principal = parseDecimal(principalValue);
-    const monthlyRate = parseDecimal(monthlyRateValue);
-    const months = parseInteger(monthsValue);
+    const validation = validateSimulationInput(
+      principalValue,
+      monthlyRateValue,
+      monthsValue,
+    );
 
-    const errors: string[] = [];
-
-    if (principal === null || principal <= 0) {
-      errors.push("Informe um valor principal maior que zero.");
-    }
-
-    if (monthlyRate === null || monthlyRate < 0) {
-      errors.push("Informe uma taxa mensal válida, igual ou maior que zero.");
-    }
-
-    if (months === null || months <= 0) {
-      errors.push(
-        "Informe a quantidade de meses com número inteiro maior que zero.",
-      );
-    }
-
-    if (errors.length > 0) {
+    if (validation.errors.length > 0) {
       statusDescription =
         "Há erros no preenchimento. Revise os campos informados.";
-      errorHtml = errors.map((error: string) => `<p>${escapeHtml(error)}</p>`)
-        .join("");
+      errorHtml = validation.errors.map((error: string) =>
+        `<p>${escapeHtml(error)}</p>`
+      ).join("");
     } else {
-      const total = calculateCompoundAmount(principal, monthlyRate, months);
+      const total = calculateCompoundAmount(
+        validation.principal as number,
+        validation.monthlyRate as number,
+        validation.months as number,
+      );
       statusDescription =
         "Simulação calculada com sucesso. Confira o resultado abaixo.";
       resultHtml =
@@ -289,7 +313,7 @@ function renderHomePage(url: URL): string {
                 aria-describedby="taxaMensal-ajuda"
               />
               <p id="taxaMensal-ajuda" class="hint">
-                Use percentual ao mês, com ponto ou vírgula.
+                Use porcentagem mensal, aceitando vírgula ou ponto.
               </p>
             </div>
 
@@ -306,7 +330,7 @@ function renderHomePage(url: URL): string {
                 aria-describedby="meses-ajuda"
               />
               <p id="meses-ajuda" class="hint">
-                Informe a quantidade de meses da simulação.
+                Informe um número inteiro de meses para a simulação.
               </p>
             </div>
           </fieldset>
@@ -320,8 +344,6 @@ function renderHomePage(url: URL): string {
           <output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>
           <div id="erro" aria-live="assertive" aria-atomic="true" role="alert"${errorHtml === "" ? " hidden" : ""}>${errorHtml}</div>
         </section>
-
-        <p class="hint">${escapeHtml(formatCounterMessage(counter.increment()))}</p>
       </section>
     </main>
     <script>
@@ -329,26 +351,38 @@ function renderHomePage(url: URL): string {
       const principalInput = document.getElementById("principal");
       const taxaMensalInput = document.getElementById("taxaMensal");
       const mesesInput = document.getElementById("meses");
-      const statusDescricao = document.getElementById("status-descricao");
       const resultado = document.getElementById("resultado");
       const erro = document.getElementById("erro");
+      const statusDescricao = document.getElementById("status-descricao");
       const botao = document.getElementById("calcular");
 
-      if (
-        form instanceof HTMLFormElement &&
+      function limparMensagens() {
+        resultado.textContent = "";
+        erro.replaceChildren();
+        erro.hidden = true;
+      }
+
+      function exibirErros(messages) {
+        erro.replaceChildren();
+        for (const message of messages) {
+          const paragraph = document.createElement("p");
+          paragraph.textContent = message;
+          erro.appendChild(paragraph);
+        }
+        erro.hidden = messages.length === 0;
+      }
+
+      if (form instanceof HTMLFormElement &&
         principalInput instanceof HTMLInputElement &&
         taxaMensalInput instanceof HTMLInputElement &&
         mesesInput instanceof HTMLInputElement &&
-        statusDescricao instanceof HTMLElement &&
         resultado instanceof HTMLOutputElement &&
         erro instanceof HTMLDivElement &&
-        botao instanceof HTMLButtonElement
-      ) {
+        statusDescricao instanceof HTMLParagraphElement &&
+        botao instanceof HTMLButtonElement) {
         form.addEventListener("submit", async (event) => {
           event.preventDefault();
-          erro.innerHTML = "";
-          erro.hidden = true;
-          resultado.innerHTML = "";
+          limparMensagens();
           statusDescricao.textContent = "Calculando simulação...";
           botao.disabled = true;
 
@@ -364,27 +398,27 @@ function renderHomePage(url: URL): string {
                 meses: mesesInput.value,
               }),
             });
+
             const data = await response.json();
 
             if (!response.ok) {
-              const errors = Array.isArray(data.errors) ? data.errors : [data.error];
-              erro.innerHTML = errors.filter(Boolean).map((message) => `<p>${message}</p>`)
-                .join("");
-              erro.hidden = false;
+              const messages = Array.isArray(data.errors) && data.errors.length > 0
+                ? data.errors
+                : [data.error || "Não foi possível calcular a simulação."];
+              exibirErros(messages);
               statusDescricao.textContent =
-                "Há erros no preenchimento. Revise os campos informados.";
+                "Não foi possível concluir a simulação sem recarregar. Revise os dados ou tente novamente.";
               return;
             }
 
-            resultado.innerHTML =
-              `Montante final estimado: <strong>${data.montanteFormatado}</strong>.`;
             statusDescricao.textContent =
               "Simulação calculada com sucesso. Confira o resultado abaixo.";
+            resultado.textContent =
+              "Montante final estimado: " + data.montanteFormatado + ".";
           } catch (_error) {
-            erro.innerHTML = "<p>Não foi possível calcular a simulação no momento.</p>";
-            erro.hidden = false;
             statusDescricao.textContent =
-              "Ocorreu um erro ao calcular a simulação. Tente novamente.";
+              "Falha ao calcular sem recarregar. Enviando pelo modo tradicional...";
+            form.submit();
           } finally {
             botao.disabled = false;
           }
@@ -405,51 +439,95 @@ function jsonResponse(body: unknown, status: number): Response {
 }
 
 async function handleCompoundInterestApi(request: Request): Promise<Response> {
-  const payload = await request.json();
-
-  const principal = parseDecimal(String(payload.principal ?? ""));
-  const monthlyRate = parseDecimal(String(payload.taxaMensal ?? ""));
-  const months = parseInteger(String(payload.meses ?? ""));
-
-  const errors: string[] = [];
-
-  if (principal === null || principal <= 0) {
-    errors.push("Informe um valor principal maior que zero.");
+  const contentType = request.headers.get("content-type") ?? "";
+  if (!contentType.toLowerCase().includes("application/json")) {
+    return jsonResponse(
+      {
+        error: "Envie o corpo da requisição em JSON.",
+        errors: ["Envie o corpo da requisição em JSON."],
+      },
+      400,
+    );
   }
 
-  if (monthlyRate === null || monthlyRate < 0) {
-    errors.push("Informe uma taxa mensal válida, igual ou maior que zero.");
+  let payload: Record<string, unknown>;
+
+  try {
+    const parsed = await request.json();
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return jsonResponse(
+        {
+          error: "Envie um objeto JSON válido.",
+          errors: ["Envie um objeto JSON válido."],
+        },
+        400,
+      );
+    }
+    payload = parsed as Record<string, unknown>;
+  } catch {
+    return jsonResponse(
+      {
+        error: "JSON inválido no corpo da requisição.",
+        errors: ["JSON inválido no corpo da requisição."],
+      },
+      400,
+    );
   }
 
-  if (months === null || months <= 0) {
-    errors.push("Informe a quantidade de meses com número inteiro maior que zero.");
+  const principalValue = String(payload.principal ?? "");
+  const monthlyRateValue = String(payload.taxaMensal ?? "");
+  const monthsValue = String(payload.meses ?? "");
+
+  const validation = validateSimulationInput(
+    principalValue,
+    monthlyRateValue,
+    monthsValue,
+  );
+
+  if (validation.errors.length > 0) {
+    return jsonResponse(
+      {
+        error: "Dados inválidos para calcular juros compostos.",
+        errors: validation.errors,
+      },
+      400,
+    );
   }
 
-  if (errors.length > 0) {
-    return jsonResponse({ errors }, 400);
-  }
+  const montante = calcularJurosCompostos(
+    validation.principal as number,
+    validation.monthlyRate as number,
+    validation.months as number,
+  );
 
-  const montante = calcularJurosCompostos(principal, monthlyRate / 100, months);
-
-  return jsonResponse({
-    montante,
-    montanteFormatado: formatCurrency(montante),
-  }, 200);
+  return jsonResponse(
+    {
+      montante,
+      montanteFormatado: formatCurrency(montante),
+    },
+    200,
+  );
 }
 
 export async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
-  if (request.method === "GET" && url.pathname === "/") {
-    return new Response(renderHomePage(url), {
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-      },
-    });
+  if (request.method === "GET" && url.pathname === "/api/visits") {
+    const visits = counter.increment();
+    return jsonResponse({ message: formatCounterMessage(visits), visits }, 200);
   }
 
   if (request.method === "POST" && url.pathname === "/api/juros-compostos") {
     return await handleCompoundInterestApi(request);
+  }
+
+  if (request.method === "GET" && url.pathname === "/") {
+    return new Response(renderHomePage(url), {
+      status: 200,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
+    });
   }
 
   return new Response("Not Found", { status: 404 });

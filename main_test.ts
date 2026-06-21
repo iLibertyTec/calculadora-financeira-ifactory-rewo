@@ -62,7 +62,10 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
     /<form method="get" action="\/" aria-describedby="status-descricao">/,
   );
   assertMatch(body, /Resultado da simulação/);
-  assertMatch(body, /Intl\.NumberFormat\("pt-BR",\s*\{[\s\S]*currency:\s*"BRL"/);
+  assertMatch(
+    body,
+    /Intl\.NumberFormat\("pt-BR",\s*\{[\s\S]*currency:\s*"BRL"/,
+  );
   assertNotMatch(body, /novalidate/);
 });
 
@@ -80,7 +83,12 @@ Deno.test("GET / processa a simulação pela query string", async () => {
   assertMatch(body, /Juros totais:/);
   assertMatch(body, /data-amount="[^"]+"/);
   assertMatch(body, /data-interest="[^"]+"/);
-  assertMatch(body, /Intl\.NumberFormat\("pt-BR",\s*\{[\s\S]*currency:\s*"BRL"/);
+  assertMatch(
+    body,
+    /Intl\.NumberFormat\("pt-BR",\s*\{[\s\S]*currency:\s*"BRL"/,
+  );
+  assertMatch(body, /Montante final estimado:\s*<strong data-amount="[^"]+">R\$/);
+  assertMatch(body, /Juros totais:\s*<strong data-interest="[^"]+">R\$/);
   assertMatch(body, /value="1000,00"/);
   assertMatch(body, /value="1,5"/);
   assertMatch(body, /value="12"/);

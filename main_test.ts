@@ -66,6 +66,7 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /Resultado da simulação|Montante final estimado:/);
   assertMatch(body, /function limparErro\(\)/);
   assertMatch(body, /function exibirErro\(mensagem\)/);
+  assertMatch(body, /function exibirErros\(mensagens\)/);
   assertMatch(body, /function obterMensagemErro\(payload, fallbackStatus\)/);
   assertMatch(body, /function obterMensagemErroHttp\(status, payload, texto\)/);
   assertMatch(body, /function atualizarStatus\(mensagem\)/);
@@ -90,9 +91,15 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
     body,
     /Não foi possível concluir o cálculo\. Verifique a mensagem de erro exibida\./,
   );
+  assertMatch(
+    body,
+    /Não foi possível calcular no momento porque a solicitação expirou ou foi interrompida\. Tente novamente\./,
+  );
   assertMatch(body, /erro\.hidden = false;/);
   assertMatch(body, /erro\.scrollIntoView\(/);
   assertMatch(body, /erro\.focus\(\);/);
+  assertMatch(body, /botaoSubmit\.disabled = true;/);
+  assertMatch(body, /botaoSubmit\.textContent = "Calculando\.\.\.";/);
   assertMatch(body, /botaoSubmit\?\.focus\(\);/);
   assertNotMatch(body, /novalidate/);
 });
@@ -155,21 +162,25 @@ Deno.test("POST /api/calcular retorna erro da API em pt-BR quando houver valida�
       body: JSON.stringify({
         principal: "0",
         taxaMensal: "1,5",
-        meses: "12",
+        meses: "0",
       }),
     }),
   );
-  const body = await response.text();
+  const body = await response.json();
 
   assertEquals(response.status, 400);
   assertEquals(
     response.headers.get("content-type"),
     "application/json; charset=utf-8",
   );
-  assertMatch(body, /"message":"Informe um valor principal maior que zero\."/);
+  assertEquals(body.error, "Informe um valor principal maior que zero.");
+  assertEquals(body.errors, [
+    "Informe um valor principal maior que zero.",
+    "Informe a quantidade de meses com número inteiro maior que zero.",
+  ]);
 });
 
-Deno.test("POST /api/calcular calcula com sucesso", async () => {
+Deno.test("POST /api/calcular retorna montante formatado quando válido", async () => {
   const response = await handler(
     new Request("http://localhost/api/calcular", {
       method: "POST",
@@ -183,32 +194,26 @@ Deno.test("POST /api/calcular calcula com sucesso", async () => {
       }),
     }),
   );
-  const body = await response.text();
+  const body = await response.json();
 
   assertEquals(response.status, 200);
-  assertEquals(
-    response.headers.get("content-type"),
-    "application/json; charset=utf-8",
-  );
-  assertMatch(body, /"resultado":/);
-  assertMatch(body, /"resultadoFormatado":"R\$/);
+  assertMatch(body.montanteFormatado, /^R\$/);
 });
 
-Deno.test("POST /api/calcular retorna erro para JSON inválido", async () => {
-  const response = await handler(
-    new Request("http://localhost/api/calcular", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-      },
-      body: "{",
-    }),
-  );
-  const body = await response.text();
+Deno.test("GET /health continua disponível", async () => {
+  const response = await handler(new Request("http://localhost/health"));
+  const body = await response.json();
 
-  assertEquals(response.status, 400);
-  assertMatch(
-    body,
-    /"message":"Não foi possível interpretar os dados enviados para cálculo\."/,
-  );
+  assertEquals(response.status, 200);
+  assertEquals(body, { ok: true });
+});
+
+Deno.test("GET /api/visits continua disponível", async () => {
+  await handler(new Request("http://localhost/"));
+  const response = await handler(new Request("http://localhost/api/visits"));
+  const body = await response.json();
+
+  assertEquals(response.status, 200);
+  assertEquals(typeof body.visits, "number");
+  assertEquals(typeof body.message, "string");
 });

@@ -1,4 +1,5 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
+import { calcularJurosCompostos } from "./src/juros_compostos.ts";
 
 const counter = new VisitCounter();
 
@@ -84,7 +85,9 @@ function renderHomePage(url: URL): string {
     }
 
     if (months === null || months <= 0) {
-      errors.push("Informe a quantidade de meses com número inteiro maior que zero.");
+      errors.push(
+        "Informe a quantidade de meses com número inteiro maior que zero.",
+      );
     }
 
     if (errors.length > 0) {
@@ -96,7 +99,8 @@ function renderHomePage(url: URL): string {
       const total = calculateCompoundAmount(principal, monthlyRate, months);
       statusDescription =
         "Simulação calculada com sucesso. Confira o resultado abaixo.";
-      resultHtml = `Montante final estimado: <strong>${escapeHtml(formatCurrency(total))}</strong>.`;
+      resultHtml =
+        `Montante final estimado: <strong>${escapeHtml(formatCurrency(total))}</strong>.`;
     }
   }
 
@@ -203,6 +207,11 @@ function renderHomePage(url: URL): string {
         cursor: pointer;
       }
 
+      button:disabled {
+        opacity: 0.7;
+        cursor: wait;
+      }
+
       .hint {
         margin: 0;
         font-size: 0.95rem;
@@ -246,7 +255,7 @@ function renderHomePage(url: URL): string {
           valor principal, taxa mensal e prazo em meses.
         </p>
 
-        <form method="get" action="/" aria-describedby="status-descricao">
+        <form id="calculadora-form" method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
 
@@ -257,15 +266,13 @@ function renderHomePage(url: URL): string {
                 name="principal"
                 type="text"
                 inputmode="decimal"
-                required
-                aria-required="true"
-                aria-describedby="principal-ajuda"
                 placeholder="Ex.: 1000,00"
                 value="${escapeHtml(principalValue)}"
+                required
+                aria-describedby="principal-ajuda"
               />
               <p id="principal-ajuda" class="hint">
-                Campo obrigatório. Informe um valor maior que zero. Aceita ponto
-                ou vírgula para decimais.
+                Informe o valor inicial da aplicação.
               </p>
             </div>
 
@@ -276,15 +283,13 @@ function renderHomePage(url: URL): string {
                 name="taxaMensal"
                 type="text"
                 inputmode="decimal"
-                required
-                aria-required="true"
-                aria-describedby="taxaMensal-ajuda"
                 placeholder="Ex.: 1,50"
                 value="${escapeHtml(monthlyRateValue)}"
+                required
+                aria-describedby="taxaMensal-ajuda"
               />
               <p id="taxaMensal-ajuda" class="hint">
-                Campo obrigatório. Informe a taxa em porcentagem mensal. Aceita
-                ponto ou vírgula para decimais.
+                Use percentual ao mês, com ponto ou vírgula.
               </p>
             </div>
 
@@ -295,66 +300,156 @@ function renderHomePage(url: URL): string {
                 name="meses"
                 type="text"
                 inputmode="numeric"
-                required
-                aria-required="true"
-                aria-describedby="meses-ajuda"
                 placeholder="Ex.: 12"
                 value="${escapeHtml(monthsValue)}"
+                required
+                aria-describedby="meses-ajuda"
               />
               <p id="meses-ajuda" class="hint">
-                Campo obrigatório. Informe um número inteiro maior que zero.
+                Informe a quantidade de meses da simulação.
               </p>
             </div>
           </fieldset>
 
-          <button type="submit">Calcular</button>
+          <button id="calcular" type="submit">Calcular</button>
         </form>
 
-        <section class="status" aria-labelledby="status-titulo">
-          <h2 id="status-titulo">Resultado da simulação</h2>
-          <p id="status-descricao" class="hint">${escapeHtml(statusDescription)}</p>
+        <section class="status" aria-labelledby="resultado-titulo">
+          <h2 id="resultado-titulo">Resultado da simulação</h2>
+          <p id="status-descricao">${escapeHtml(statusDescription)}</p>
           <output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>
           <div id="erro" aria-live="assertive" aria-atomic="true" role="alert"${errorHtml === "" ? " hidden" : ""}>${errorHtml}</div>
         </section>
+
+        <p class="hint">${escapeHtml(formatCounterMessage(counter.increment()))}</p>
       </section>
     </main>
+    <script>
+      const form = document.getElementById("calculadora-form");
+      const principalInput = document.getElementById("principal");
+      const taxaMensalInput = document.getElementById("taxaMensal");
+      const mesesInput = document.getElementById("meses");
+      const statusDescricao = document.getElementById("status-descricao");
+      const resultado = document.getElementById("resultado");
+      const erro = document.getElementById("erro");
+      const botao = document.getElementById("calcular");
+
+      if (
+        form instanceof HTMLFormElement &&
+        principalInput instanceof HTMLInputElement &&
+        taxaMensalInput instanceof HTMLInputElement &&
+        mesesInput instanceof HTMLInputElement &&
+        statusDescricao instanceof HTMLElement &&
+        resultado instanceof HTMLOutputElement &&
+        erro instanceof HTMLDivElement &&
+        botao instanceof HTMLButtonElement
+      ) {
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          erro.innerHTML = "";
+          erro.hidden = true;
+          resultado.innerHTML = "";
+          statusDescricao.textContent = "Calculando simulação...";
+          botao.disabled = true;
+
+          try {
+            const response = await fetch("/api/juros-compostos", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                principal: principalInput.value,
+                taxaMensal: taxaMensalInput.value,
+                meses: mesesInput.value,
+              }),
+            });
+            const data = await response.json();
+
+            if (!response.ok) {
+              const errors = Array.isArray(data.errors) ? data.errors : [data.error];
+              erro.innerHTML = errors.filter(Boolean).map((message) => `<p>${message}</p>`)
+                .join("");
+              erro.hidden = false;
+              statusDescricao.textContent =
+                "Há erros no preenchimento. Revise os campos informados.";
+              return;
+            }
+
+            resultado.innerHTML =
+              `Montante final estimado: <strong>${data.montanteFormatado}</strong>.`;
+            statusDescricao.textContent =
+              "Simulação calculada com sucesso. Confira o resultado abaixo.";
+          } catch (_error) {
+            erro.innerHTML = "<p>Não foi possível calcular a simulação no momento.</p>";
+            erro.hidden = false;
+            statusDescricao.textContent =
+              "Ocorreu um erro ao calcular a simulação. Tente novamente.";
+          } finally {
+            botao.disabled = false;
+          }
+        });
+      }
+    </script>
   </body>
 </html>`;
 }
 
-export async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
+function jsonResponse(body: unknown, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+    },
+  });
+}
 
-  if (url.pathname === "/health") {
-    return Response.json({
-      ok: true,
-      service: "ifactory-product",
-      version: "0.1.0",
-    });
+async function handleCompoundInterestApi(request: Request): Promise<Response> {
+  const payload = await request.json();
+
+  const principal = parseDecimal(String(payload.principal ?? ""));
+  const monthlyRate = parseDecimal(String(payload.taxaMensal ?? ""));
+  const months = parseInteger(String(payload.meses ?? ""));
+
+  const errors: string[] = [];
+
+  if (principal === null || principal <= 0) {
+    errors.push("Informe um valor principal maior que zero.");
   }
 
-  if (url.pathname === "/api/visits" && req.method === "GET") {
-    return Response.json(counter.state);
+  if (monthlyRate === null || monthlyRate < 0) {
+    errors.push("Informe uma taxa mensal válida, igual ou maior que zero.");
   }
 
-  if (url.pathname === "/api/visits" && req.method === "POST") {
-    const body = req.headers.get("content-type")?.includes("json")
-      ? await req.json().catch(() => ({}))
-      : {};
-    const visitorId = typeof body.visitorId === "string"
-      ? body.visitorId
-      : undefined;
-    const state = counter.recordVisit(visitorId);
-    return Response.json({
-      ...state,
-      message: formatCounterMessage(state),
-    });
+  if (months === null || months <= 0) {
+    errors.push("Informe a quantidade de meses com número inteiro maior que zero.");
   }
 
-  if (url.pathname === "/") {
+  if (errors.length > 0) {
+    return jsonResponse({ errors }, 400);
+  }
+
+  const montante = calcularJurosCompostos(principal, monthlyRate / 100, months);
+
+  return jsonResponse({
+    montante,
+    montanteFormatado: formatCurrency(montante),
+  }, 200);
+}
+
+export async function handler(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+
+  if (request.method === "GET" && url.pathname === "/") {
     return new Response(renderHomePage(url), {
-      headers: { "content-type": "text/html; charset=utf-8" },
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
     });
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/juros-compostos") {
+    return await handleCompoundInterestApi(request);
   }
 
   return new Response("Not Found", { status: 404 });

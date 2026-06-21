@@ -1,6 +1,35 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
+import { calcularJurosCompostos } from "./src/financeiro.ts";
+import {
+  validarJurosCompostosRequest,
+  type JurosCompostosRequest,
+} from "./src/juros_compostos_request.ts";
 
 const counter = new VisitCounter();
+
+function jsonError(message: string, status = 400): Response {
+  return Response.json({ erro: message }, { status });
+}
+
+async function parseJurosCompostosRequest(
+  req: Request,
+): Promise<JurosCompostosRequest | Response> {
+  let body: unknown;
+
+  try {
+    body = await req.json();
+  } catch {
+    return jsonError("JSON inválido.");
+  }
+
+  const result = validarJurosCompostosRequest(body);
+
+  if (!result.success) {
+    return jsonError(result.error);
+  }
+
+  return result.data;
+}
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -11,6 +40,19 @@ export async function handler(req: Request): Promise<Response> {
       service: "ifactory-product",
       version: "0.1.0",
     });
+  }
+
+  if (url.pathname === "/api/juros-compostos" && req.method === "POST") {
+    const parsed = await parseJurosCompostosRequest(req);
+
+    if (parsed instanceof Response) {
+      return parsed;
+    }
+
+    const { principal, taxaMensal, meses } = parsed;
+    const resultado = calcularJurosCompostos(principal, taxaMensal, meses);
+
+    return Response.json(resultado);
   }
 
   if (url.pathname === "/api/visits" && req.method === "GET") {

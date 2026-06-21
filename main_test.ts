@@ -114,6 +114,11 @@ Deno.test("GET / contém JavaScript puro para submit sem recarregar", async () =
     body,
     /throw new Error\("Não foi possível interpretar a resposta do servidor\."\);/,
   );
+  assertMatch(body, /resultado instanceof HTMLElement/);
+  assertMatch(body, /const validateFields = \(\) => \{/);
+  assertMatch(body, /renderErrors\(validationErrors\);/);
+  assertMatch(body, /finally \{/);
+  assertMatch(body, /botao\.disabled = false;/);
 });
 
 Deno.test("POST /api/juros-compostos retorna cálculo em JSON", async () => {
@@ -143,6 +148,24 @@ Deno.test("POST /api/juros-compostos retorna cálculo em JSON", async () => {
   assertEquals(body.meses, 12);
   assertEquals(typeof body.montante, "number");
   assertMatch(body.montanteFormatado, /R\$/);
+});
+
+Deno.test("POST /api/juros-compostos aceita content-type com charset", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json; charset=utf-8",
+      },
+      body: JSON.stringify({
+        principal: "1000,00",
+        taxaMensal: "1,5",
+        meses: "12",
+      }),
+    }),
+  );
+
+  assertEquals(response.status, 200);
 });
 
 Deno.test("POST /api/juros-compostos rejeita content-type inválido", async () => {
@@ -179,4 +202,30 @@ Deno.test("POST /api/juros-compostos rejeita JSON inválido", async () => {
   assertEquals(response.status, 400);
   assertEquals(body.error, "Não foi possível interpretar o JSON enviado.");
   assertEquals(body.errors[0], "Não foi possível interpretar o JSON enviado.");
+});
+
+Deno.test("GET /api/visits preserva contrato anterior", async () => {
+  const response = await handler(new Request("http://localhost/api/visits"));
+  const body = await response.json();
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertEquals(typeof body.visits, "number");
+  assertEquals(typeof body.message, "string");
+});
+
+Deno.test("POST /api/visits preserva contrato anterior", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/visits", {
+      method: "POST",
+    }),
+  );
+  const body = await response.json();
+
+  assertEquals(response.status, 200);
+  assertEquals(typeof body.visits, "number");
+  assertEquals(typeof body.message, "string");
 });

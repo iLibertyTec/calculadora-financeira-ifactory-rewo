@@ -10,8 +10,15 @@ Deno.test("calcularJurosCompostos calcula taxa positiva com múltiplos meses", (
 });
 
 Deno.test("calcularJurosCompostos calcula principal e taxa mensal decimais", () => {
-  const resultado = calcularJurosCompostos(1234.56, 1.75, 4);
+  const principal: number = 1234.56;
+  const taxaMensalPercent: number = 1.75;
+  const meses: number = 4;
+  const taxaMensal: number = taxaMensalPercent / 100;
+  const montanteEsperado: number = principal * Math.pow(1 + taxaMensal, meses);
+  const jurosTotaisEsperados: number = montanteEsperado - principal;
 
-  assertAlmostEquals(resultado.montante, 1323.3297370086, 1e-12);
-  assertAlmostEquals(resultado.jurosTotais, 88.7697370086, 1e-12);
+  const resultado = calcularJurosCompostos(principal, taxaMensalPercent, meses);
+
+  assertAlmostEquals(resultado.montante, montanteEsperado, 1e-12);
+  assertAlmostEquals(resultado.jurosTotais, jurosTotaisEsperados, 1e-12);
 });

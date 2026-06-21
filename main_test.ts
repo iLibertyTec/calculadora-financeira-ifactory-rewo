@@ -16,9 +16,8 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
   assertMatch(body, /name="principal"/);
   assertMatch(body, /id="principal"/);
-  assertMatch(body, /type="number"/);
+  assertMatch(body, /type="text"/);
   assertMatch(body, /inputmode="decimal"/);
-  assertMatch(body, /step="0\.01"/);
   assertMatch(body, /placeholder="Ex\.: 1000,00"/);
   assertMatch(body, /required/);
   assertMatch(body, /aria-describedby="principal-ajuda"/);
@@ -31,13 +30,57 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /name="meses"/);
   assertMatch(body, /aria-describedby="meses-ajuda"/);
   assertMatch(body, /<button type="submit">Calcular<\/button>/);
-  assertMatch(body, /<output id="resultado" aria-live="polite"><\/output>/);
+  assertMatch(body, /<output id="resultado" aria-live="polite" aria-atomic="true"><\/output>/);
   assertMatch(
     body,
-    /<div id="erro" aria-live="polite" role="alert" hidden><\/div>/,
+    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,
   );
-  assertMatch(body, /<form method="get" action="\/">/);
+  assertMatch(body, /<form method="get" action="\/" aria-describedby="status-descricao">/);
+  assertMatch(body, /Resultado da simulação/);
   assertNotMatch(body, /novalidate/);
+});
+
+Deno.test("GET / processa a simulação pela query string", async () => {
+  const response = await handler(
+    new Request(
+      "http://localhost/?principal=1000,00&taxaMensal=1,5&meses=12",
+    ),
+  );
+  const body = await response.text();
+
+  assertEquals(response.status, 200);
+  assertMatch(body, /Simulação calculada com sucesso/);
+  assertMatch(body, /Montante final estimado:/);
+  assertMatch(body, /R\$/);
+  assertMatch(body, /value="1000,00"/);
+  assertMatch(body, /value="1,5"/);
+  assertMatch(body, /value="12"/);
+  assertMatch(
+    body,
+    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,
+  );
+});
+
+Deno.test("GET / exibe erros de validação quando necessário", async () => {
+  const response = await handler(
+    new Request(
+      "http://localhost/?principal=0&taxaMensal=abc&meses=0",
+    ),
+  );
+  const body = await response.text();
+
+  assertEquals(response.status, 200);
+  assertMatch(body, /Há erros no preenchimento/);
+  assertMatch(body, /Informe um valor principal maior que zero\./);
+  assertMatch(
+    body,
+    /Informe uma taxa mensal válida, igual ou maior que zero\./,
+  );
+  assertMatch(
+    body,
+    /Informe a quantidade de meses com número inteiro maior que zero\./,
+  );
+  assertNotMatch(body, /role="alert" hidden/);
 });
 
 Deno.test("GET / não referencia frameworks ou dependências externas", async () => {

@@ -2,7 +2,104 @@ import { formatCounterMessage, VisitCounter } from "./counter.ts";
 
 const counter = new VisitCounter();
 
-function renderHomePage(): string {
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function parseDecimal(value: string | null): number | null {
+  if (value === null) {
+    return null;
+  }
+
+  const normalized = value.trim().replace(",", ".");
+  if (normalized === "") {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function parseInteger(value: string | null): number | null {
+  if (value === null) {
+    return null;
+  }
+
+  const normalized = value.trim();
+  if (!/^\d+$/.test(normalized)) {
+    return null;
+  }
+
+  const parsed = Number(normalized);
+  return Number.isInteger(parsed) ? parsed : null;
+}
+
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
+
+function calculateCompoundAmount(
+  principal: number,
+  monthlyRatePercent: number,
+  months: number,
+): number {
+  const rate = monthlyRatePercent / 100;
+  return principal * (1 + rate) ** months;
+}
+
+function renderHomePage(url: URL): string {
+  const principalValue = url.searchParams.get("principal") ?? "";
+  const monthlyRateValue = url.searchParams.get("taxaMensal") ?? "";
+  const monthsValue = url.searchParams.get("meses") ?? "";
+
+  let resultHtml = "";
+  let errorHtml = "";
+  let statusDescription =
+    "Preencha os campos e envie o formulário para calcular o montante final da simulação.";
+
+  const hasSubmitted =
+    principalValue !== "" || monthlyRateValue !== "" || monthsValue !== "";
+
+  if (hasSubmitted) {
+    const principal = parseDecimal(principalValue);
+    const monthlyRate = parseDecimal(monthlyRateValue);
+    const months = parseInteger(monthsValue);
+
+    const errors: string[] = [];
+
+    if (principal === null || principal <= 0) {
+      errors.push("Informe um valor principal maior que zero.");
+    }
+
+    if (monthlyRate === null || monthlyRate < 0) {
+      errors.push("Informe uma taxa mensal válida, igual ou maior que zero.");
+    }
+
+    if (months === null || months <= 0) {
+      errors.push("Informe a quantidade de meses com número inteiro maior que zero.");
+    }
+
+    if (errors.length > 0) {
+      statusDescription =
+        "Há erros no preenchimento. Revise os campos informados.";
+      errorHtml = errors.map((error: string) => `<p>${escapeHtml(error)}</p>`)
+        .join("");
+    } else {
+      const total = calculateCompoundAmount(principal, monthlyRate, months);
+      statusDescription =
+        "Simulação calculada com sucesso. Confira o resultado abaixo.";
+      resultHtml = `Montante final estimado: <strong>${escapeHtml(formatCurrency(total))}</strong>.`;
+    }
+  }
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
@@ -18,6 +115,7 @@ function renderHomePage(): string {
         --muted: #5b657a;
         --border: #d8deea;
         --accent: #1d4ed8;
+        --danger: #b91c1c;
       }
 
       * {
@@ -113,6 +211,8 @@ function renderHomePage(): string {
 
       .status {
         margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border);
         display: grid;
         gap: 16px;
       }
@@ -121,6 +221,15 @@ function renderHomePage(): string {
       [role="alert"] {
         display: block;
         min-height: 24px;
+      }
+
+      #erro {
+        color: var(--danger);
+      }
+
+      #erro p,
+      #resultado p {
+        margin: 0;
       }
 
       [hidden] {
@@ -137,7 +246,7 @@ function renderHomePage(): string {
           valor principal, taxa mensal e prazo em meses.
         </p>
 
-        <form method="get" action="/">
+        <form method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
 
@@ -146,17 +255,17 @@ function renderHomePage(): string {
               <input
                 id="principal"
                 name="principal"
-                type="number"
+                type="text"
                 inputmode="decimal"
-                min="0"
-                step="0.01"
                 required
                 aria-required="true"
                 aria-describedby="principal-ajuda"
                 placeholder="Ex.: 1000,00"
+                value="${escapeHtml(principalValue)}"
               />
               <p id="principal-ajuda" class="hint">
-                Campo obrigatório. Use ponto ou vírgula para decimais.
+                Campo obrigatório. Informe um valor maior que zero. Aceita ponto
+                ou vírgula para decimais.
               </p>
             </div>
 
@@ -165,17 +274,17 @@ function renderHomePage(): string {
               <input
                 id="taxaMensal"
                 name="taxaMensal"
-                type="number"
+                type="text"
                 inputmode="decimal"
-                min="0"
-                step="0.01"
                 required
                 aria-required="true"
                 aria-describedby="taxaMensal-ajuda"
                 placeholder="Ex.: 1,50"
+                value="${escapeHtml(monthlyRateValue)}"
               />
               <p id="taxaMensal-ajuda" class="hint">
-                Campo obrigatório. Informe a taxa em porcentagem mensal.
+                Campo obrigatório. Informe a taxa em porcentagem mensal. Aceita
+                ponto ou vírgula para decimais.
               </p>
             </div>
 
@@ -184,14 +293,13 @@ function renderHomePage(): string {
               <input
                 id="meses"
                 name="meses"
-                type="number"
+                type="text"
                 inputmode="numeric"
-                min="1"
-                step="1"
                 required
                 aria-required="true"
                 aria-describedby="meses-ajuda"
                 placeholder="Ex.: 12"
+                value="${escapeHtml(monthsValue)}"
               />
               <p id="meses-ajuda" class="hint">
                 Campo obrigatório. Informe um número inteiro maior que zero.
@@ -202,10 +310,12 @@ function renderHomePage(): string {
           <button type="submit">Calcular</button>
         </form>
 
-        <div class="status">
-          <output id="resultado" aria-live="polite"></output>
-          <div id="erro" aria-live="polite" role="alert" hidden></div>
-        </div>
+        <section class="status" aria-labelledby="status-titulo">
+          <h2 id="status-titulo">Resultado da simulação</h2>
+          <p id="status-descricao" class="hint">${escapeHtml(statusDescription)}</p>
+          <output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>
+          <div id="erro" aria-live="assertive" aria-atomic="true" role="alert"${errorHtml === "" ? " hidden" : ""}>${errorHtml}</div>
+        </section>
       </section>
     </main>
   </body>
@@ -242,10 +352,14 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   if (url.pathname === "/") {
-    return new Response(renderHomePage(), {
+    return new Response(renderHomePage(url), {
       headers: { "content-type": "text/html; charset=utf-8" },
     });
   }
 
-  return Response.json({ error: "not found" }, { status: 404 });
+  return new Response("Not Found", { status: 404 });
+}
+
+if (import.meta.main) {
+  Deno.serve(handler);
 }

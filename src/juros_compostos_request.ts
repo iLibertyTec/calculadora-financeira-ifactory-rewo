@@ -23,9 +23,12 @@ function isJsonContentType(contentType: string | null): boolean {
     return false;
   }
 
-  const mediaType: string = contentType.split(";", 1)[0].trim().toLowerCase();
+  const normalizedContentType: string = contentType.trim().toLowerCase();
 
-  return mediaType === "application/json" || mediaType.endsWith("+json");
+  return normalizedContentType === "application/json" ||
+    normalizedContentType.startsWith("application/json;") ||
+    normalizedContentType.includes("+json") ||
+    normalizedContentType.includes("/json;");
 }
 
 export async function readJurosCompostosRequest(
@@ -34,7 +37,7 @@ export async function readJurosCompostosRequest(
   if (!isJsonContentType(req.headers.get("content-type"))) {
     return {
       success: false,
-      error: "O corpo da requisição deve estar em JSON.",
+      error: "Validação falhou: o corpo da requisição deve estar em JSON.",
     };
   }
 
@@ -45,47 +48,52 @@ export async function readJurosCompostosRequest(
   } catch {
     return {
       success: false,
-      error: "O JSON da requisição é inválido.",
+      error: "Validação falhou: o JSON da requisição é inválido.",
     };
   }
 
   if (typeof body !== "object" || body === null || Array.isArray(body)) {
     return {
       success: false,
-      error: "O corpo da requisição deve ser um objeto JSON.",
+      error:
+        "Validação falhou: o corpo da requisição deve ser um objeto JSON.",
     };
   }
 
   const payload: Record<string, unknown> = body as Record<string, unknown>;
-  const extraFields: string[] = Object.keys(payload).filter((key: string) => {
+  const payloadKeys: string[] = Reflect.ownKeys(payload).filter((key: PropertyKey) => {
+    return typeof key === "string";
+  }) as string[];
+  const extraFields: string[] = payloadKeys.filter((key: string) => {
     return !JUROS_COMPOSTOS_FIELDS.includes(key);
   });
 
   if (extraFields.length > 0) {
     return {
       success: false,
-      error: `Campo(s) desconhecido(s): ${extraFields.join(", ")}.`,
+      error:
+        `Validação falhou: campo(s) desconhecido(s): ${extraFields.join(", ")}.`,
     };
   }
 
   if (!Object.hasOwn(payload, "principal")) {
     return {
       success: false,
-      error: "O campo principal é obrigatório.",
+      error: "Validação falhou: campo principal é obrigatório.",
     };
   }
 
   if (!Object.hasOwn(payload, "taxaMensal")) {
     return {
       success: false,
-      error: "O campo taxaMensal é obrigatório.",
+      error: "Validação falhou: campo taxaMensal é obrigatório.",
     };
   }
 
   if (!Object.hasOwn(payload, "meses")) {
     return {
       success: false,
-      error: "O campo meses é obrigatório.",
+      error: "Validação falhou: campo meses é obrigatório.",
     };
   }
 
@@ -96,7 +104,8 @@ export async function readJurosCompostosRequest(
   ) {
     return {
       success: false,
-      error: "O campo principal deve ser um número finito maior que zero.",
+      error:
+        "Validação falhou: campo principal inválido: deve ser um número finito maior que zero.",
     };
   }
 
@@ -108,7 +117,7 @@ export async function readJurosCompostosRequest(
     return {
       success: false,
       error:
-        "O campo taxaMensal deve ser um número finito maior ou igual a zero.",
+        "Validação falhou: campo taxaMensal inválido: deve ser um número finito maior ou igual a zero.",
     };
   }
 
@@ -120,7 +129,8 @@ export async function readJurosCompostosRequest(
   ) {
     return {
       success: false,
-      error: "O campo meses deve ser um número inteiro positivo.",
+      error:
+        "Validação falhou: campo meses inválido: deve ser um número inteiro positivo.",
     };
   }
 

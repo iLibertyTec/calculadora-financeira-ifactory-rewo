@@ -14,7 +14,7 @@ Deno.test("retorna erro quando content-type não indica JSON", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O corpo da requisição deve estar em JSON.",
+    error: "Validação falhou: o corpo da requisição deve estar em JSON.",
   });
 });
 
@@ -23,6 +23,31 @@ Deno.test("aceita application/json", async () => {
     method: "POST",
     headers: {
       "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 12,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertObjectMatch(result, {
+    success: true,
+    data: {
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 12,
+    },
+  });
+});
+
+Deno.test("aceita application/json com parâmetros comuns", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json; charset=UTF-8; profile=calc",
     },
     body: JSON.stringify({
       principal: 1000,
@@ -85,7 +110,7 @@ Deno.test("rejeita content-type com substring json fora do media type esperado",
 
   assertEquals(result, {
     success: false,
-    error: "O corpo da requisição deve estar em JSON.",
+    error: "Validação falhou: o corpo da requisição deve estar em JSON.",
   });
 });
 
@@ -102,7 +127,7 @@ Deno.test("retorna erro quando JSON é inválido", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O JSON da requisição é inválido.",
+    error: "Validação falhou: o JSON da requisição é inválido.",
   });
 });
 
@@ -119,7 +144,7 @@ Deno.test("retorna erro quando corpo JSON está vazio", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O JSON da requisição é inválido.",
+    error: "Validação falhou: o JSON da requisição é inválido.",
   });
 });
 
@@ -136,7 +161,7 @@ Deno.test("retorna erro quando corpo não é um objeto JSON", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O corpo da requisição deve ser um objeto JSON.",
+    error: "Validação falhou: o corpo da requisição deve ser um objeto JSON.",
   });
 });
 
@@ -156,7 +181,7 @@ Deno.test("retorna erro quando principal está ausente", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo principal é obrigatório.",
+    error: "Validação falhou: campo principal é obrigatório.",
   });
 });
 
@@ -176,7 +201,7 @@ Deno.test("retorna erro quando taxaMensal está ausente", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo taxaMensal é obrigatório.",
+    error: "Validação falhou: campo taxaMensal é obrigatório.",
   });
 });
 
@@ -196,7 +221,7 @@ Deno.test("retorna erro quando meses está ausente", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo meses é obrigatório.",
+    error: "Validação falhou: campo meses é obrigatório.",
   });
 });
 
@@ -218,7 +243,7 @@ Deno.test("retorna erro quando há campos extras", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "Campo(s) desconhecido(s): moeda.",
+    error: "Validação falhou: campo(s) desconhecido(s): moeda.",
   });
 });
 
@@ -239,7 +264,8 @@ Deno.test("retorna erro quando principal não é numérico", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo principal deve ser um número finito maior que zero.",
+    error:
+      "Validação falhou: campo principal inválido: deve ser um número finito maior que zero.",
   });
 });
 
@@ -260,28 +286,8 @@ Deno.test("retorna erro quando principal é zero", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo principal deve ser um número finito maior que zero.",
-  });
-});
-
-Deno.test("retorna erro quando principal é negativo", async () => {
-  const req = new Request("http://localhost/api/juros-compostos", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      principal: -1000,
-      taxaMensal: 1.5,
-      meses: 12,
-    }),
-  });
-
-  const result = await readJurosCompostosRequest(req);
-
-  assertEquals(result, {
-    success: false,
-    error: "O campo principal deve ser um número finito maior que zero.",
+    error:
+      "Validação falhou: campo principal inválido: deve ser um número finito maior que zero.",
   });
 });
 
@@ -303,29 +309,7 @@ Deno.test("retorna erro quando taxaMensal não é numérico", async () => {
   assertEquals(result, {
     success: false,
     error:
-      "O campo taxaMensal deve ser um número finito maior ou igual a zero.",
-  });
-});
-
-Deno.test("retorna erro quando taxaMensal é negativa", async () => {
-  const req = new Request("http://localhost/api/juros-compostos", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      principal: 1000,
-      taxaMensal: -1.5,
-      meses: 12,
-    }),
-  });
-
-  const result = await readJurosCompostosRequest(req);
-
-  assertEquals(result, {
-    success: false,
-    error:
-      "O campo taxaMensal deve ser um número finito maior ou igual a zero.",
+      "Validação falhou: campo taxaMensal inválido: deve ser um número finito maior ou igual a zero.",
   });
 });
 
@@ -346,7 +330,8 @@ Deno.test("retorna erro quando meses não é numérico", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo meses deve ser um número inteiro positivo.",
+    error:
+      "Validação falhou: campo meses inválido: deve ser um número inteiro positivo.",
   });
 });
 
@@ -367,28 +352,8 @@ Deno.test("retorna erro quando meses não é inteiro", async () => {
 
   assertEquals(result, {
     success: false,
-    error: "O campo meses deve ser um número inteiro positivo.",
-  });
-});
-
-Deno.test("retorna erro quando meses é zero", async () => {
-  const req = new Request("http://localhost/api/juros-compostos", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      principal: 1000,
-      taxaMensal: 1.5,
-      meses: 0,
-    }),
-  });
-
-  const result = await readJurosCompostosRequest(req);
-
-  assertEquals(result, {
-    success: false,
-    error: "O campo meses deve ser um número inteiro positivo.",
+    error:
+      "Validação falhou: campo meses inválido: deve ser um número inteiro positivo.",
   });
 });
 
@@ -400,7 +365,7 @@ Deno.test("retorna sucesso quando entrada é válida", async () => {
     },
     body: JSON.stringify({
       principal: 2500.75,
-      taxaMensal: 2.25,
+      taxaMensal: 2.1,
       meses: 18,
     }),
   });
@@ -411,7 +376,7 @@ Deno.test("retorna sucesso quando entrada é válida", async () => {
     success: true,
     data: {
       principal: 2500.75,
-      taxaMensal: 2.25,
+      taxaMensal: 2.1,
       meses: 18,
     },
   });

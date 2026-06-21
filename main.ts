@@ -153,11 +153,12 @@ export async function handler(req: Request): Promise<Response> {
     }
 
     const { capitalInicial, taxa, periodos } = validation.payload;
-    const montante = calcularJurosCompostos(
+    const _resultado = calcularJurosCompostos({
       capitalInicial,
-      taxa,
-      periodos,
-    );
+      taxaPorPeriodo: taxa,
+      quantidadePeriodos: periodos,
+    });
+    const montante = _resultado.montanteFinal;
 
     return jsonResponse({
       capitalInicial,

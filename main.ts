@@ -169,6 +169,7 @@ function renderHomePage(url: URL): string {
       .card {
         width: 100%;
         max-width: 720px;
+        margin: 0 auto;
         background: var(--panel);
         border: 1px solid rgba(216, 222, 234, 0.9);
         border-radius: 20px;
@@ -238,15 +239,17 @@ function renderHomePage(url: URL): string {
         color: var(--ink);
       }
 
-      .help {
+      .hint {
+        margin: 0;
         font-size: 0.9rem;
         color: var(--muted);
       }
 
       input {
         width: 100%;
+        inline-size: 100%;
         min-width: 0;
-        padding: 14px 16px;
+        padding: 12px 14px;
         border: 1px solid var(--border);
         border-radius: 12px;
         font: inherit;
@@ -255,51 +258,59 @@ function renderHomePage(url: URL): string {
       }
 
       input:focus {
-        outline: 3px solid rgba(29, 78, 216, 0.2);
+        outline: 3px solid rgba(29, 78, 216, 0.18);
+        outline-offset: 1px;
         border-color: var(--accent);
-      }
-
-      .actions {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        align-items: flex-start;
       }
 
       button {
         appearance: none;
         border: 0;
         border-radius: 12px;
-        padding: 14px 20px;
+        padding: 14px 18px;
         font: inherit;
         font-weight: 700;
         color: #ffffff;
-        background: var(--accent);
+        background: linear-gradient(180deg, var(--accent), var(--accent-strong));
         cursor: pointer;
-        transition: background-color 0.2s ease;
+        box-shadow: 0 10px 24px rgba(29, 78, 216, 0.22);
       }
 
       button:hover {
-        background: var(--accent-strong);
+        filter: brightness(1.03);
       }
 
-      button:focus-visible {
-        outline: 3px solid rgba(29, 78, 216, 0.25);
+      button:focus {
+        outline: 3px solid rgba(29, 78, 216, 0.2);
         outline-offset: 2px;
       }
 
       .feedback {
         display: grid;
         gap: 12px;
+        padding: 18px;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: #ffffff;
       }
 
-      output,
+      .feedback h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        color: var(--ink);
+      }
+
+      #resultado,
       [role="alert"] {
         display: block;
-        padding: 16px 18px;
-        border-radius: 14px;
-        border: 1px solid var(--border);
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid transparent;
         word-break: break-word;
+      }
+
+      #resultado:empty {
+        display: none;
       }
 
       #resultado {
@@ -312,25 +323,23 @@ function renderHomePage(url: URL): string {
         color: #14532d;
       }
 
-      #erro {
+      [role="alert"] {
         color: var(--danger);
         background: var(--danger-bg);
         border-color: var(--danger-border);
       }
 
-      #erro p {
+      [role="alert"] p {
         margin: 0;
         color: inherit;
       }
 
-      #erro p + p {
+      [role="alert"] p + p {
         margin-top: 8px;
       }
 
-      .meta {
-        margin-top: 24px;
-        padding-top: 16px;
-        border-top: 1px solid var(--border);
+      .footer-note {
+        margin-top: 20px;
         font-size: 0.95rem;
         color: var(--muted);
       }
@@ -348,40 +357,41 @@ function renderHomePage(url: URL): string {
 
         .card {
           padding: 24px;
-          border-radius: 16px;
+          border-radius: 18px;
         }
 
-        fieldset {
+        fieldset,
+        .feedback {
           padding: 16px;
-        }
-
-        input,
-        button {
-          padding: 13px 14px;
         }
       }
 
       @media (max-width: 400px) {
-        main {
-          padding: 12px;
-        }
-
         .card {
           padding: 18px;
         }
 
-        .grid {
-          grid-template-columns: 1fr;
+        fieldset,
+        .feedback {
+          padding: 14px;
+        }
+
+        button {
+          width: 100%;
+          inline-size: 100%;
         }
       }
     </style>
   </head>
   <body>
     <main>
-      <section class="card" aria-labelledby="titulo-principal">
+      <section class="card" aria-labelledby="page-title">
         <div class="eyebrow">iFactory • Simulação financeira</div>
-        <h1 id="titulo-principal">Calculadora de juros compostos</h1>
-        <p id="status-descricao">${escapeHtml(statusDescription)}</p>
+        <h1 id="page-title">Calculadora Financeira iFactory</h1>
+        <p>
+          Simule rapidamente o montante final com juros compostos a partir do valor principal,
+          da taxa mensal e do período informado.
+        </p>
         <form method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
@@ -398,7 +408,7 @@ function renderHomePage(url: URL): string {
                   aria-describedby="principal-ajuda"
                   required
                 />
-                <span id="principal-ajuda" class="help">Informe o valor inicial aplicado.</span>
+                <p id="principal-ajuda" class="hint">Use vírgula ou ponto para separar os centavos.</p>
               </div>
               <div class="field">
                 <label for="taxaMensal">Taxa mensal (%) *</label>
@@ -412,7 +422,7 @@ function renderHomePage(url: URL): string {
                   aria-describedby="taxaMensal-ajuda"
                   required
                 />
-                <span id="taxaMensal-ajuda" class="help">Use percentual mensal, como 1,5 para 1,5%.</span>
+                <p id="taxaMensal-ajuda" class="hint">Informe a taxa percentual aplicada a cada mês.</p>
               </div>
               <div class="field">
                 <label for="meses">Meses *</label>
@@ -426,50 +436,65 @@ function renderHomePage(url: URL): string {
                   aria-describedby="meses-ajuda"
                   required
                 />
-                <span id="meses-ajuda" class="help">Digite a duração da simulação em meses inteiros.</span>
+                <p id="meses-ajuda" class="hint">Digite um número inteiro maior que zero.</p>
               </div>
             </div>
-          </fieldset>
-          <div class="actions">
             <button type="submit">Calcular</button>
-          </div>
-          <div class="feedback" aria-label="Resultado da simulação">
+          </fieldset>
+          <section class="feedback" aria-labelledby="resultado-titulo">
+            <h2 id="resultado-titulo">Resultado da simulação</h2>
+            <p id="status-descricao">${escapeHtml(statusDescription)}</p>
             ${resultSection}
             ${errorSection}
-          </div>
+          </section>
         </form>
-        <div class="meta">${escapeHtml(formatCounterMessage(counter.current()))}</div>
+        <p class="footer-note">${escapeHtml(formatCounterMessage(counter.peek()))}</p>
       </section>
     </main>
   </body>
 </html>`;
 }
 
-export function handler(request: Request): Response | Promise<Response> {
+function jsonResponse(body: string, status = 200): Response {
+  return new Response(body, {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+    },
+  });
+}
+
+function htmlResponse(body: string): Response {
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "content-type": "text/html; charset=utf-8",
+    },
+  });
+}
+
+export function handler(request: Request): Response {
   const url = new URL(request.url);
 
   if (url.pathname === "/health") {
-    return Response.json({ ok: true });
+    return jsonResponse('{"ok":true,"service":"calculadora-financeira-ifactory-rewo","version":"1.0.0"}');
   }
 
   if (url.pathname === "/api/visits") {
-    const visits = counter.increment();
-    return Response.json({
-      visits,
-      message: formatCounterMessage(visits),
-    });
+    return jsonResponse(
+      JSON.stringify({
+        visits: counter.peek(),
+        message: formatCounterMessage(counter.peek()),
+      }),
+    );
   }
 
-  if (url.pathname === "/") {
-    return new Response(renderHomePage(url), {
-      status: 200,
-      headers: {
-        "content-type": "text/html; charset=utf-8",
-      },
-    });
+  if (url.pathname !== "/") {
+    return new Response("Not Found", { status: 404 });
   }
 
-  return new Response("Not Found", { status: 404 });
+  counter.increment();
+  return htmlResponse(renderHomePage(url));
 }
 
 if (import.meta.main) {

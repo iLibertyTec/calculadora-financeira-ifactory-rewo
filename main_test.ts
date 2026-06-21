@@ -25,6 +25,9 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /@media \(max-width: 900px\)/);
   assertMatch(body, /@media \(max-width: 720px\)/);
   assertMatch(body, /@media \(max-width: 400px\)/);
+  assertMatch(body, /margin: 0 auto;/);
+  assertMatch(body, /button\s*\{[\s\S]*?cursor: pointer;/);
+  assertMatch(body, /button\s*\{[\s\S]*?@media \(max-width: 400px\)[\s\S]*?width: 100%;/);
   assertMatch(body, /<legend>Dados da simulação<\/legend>/);
   assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
   assertMatch(body, /name="principal"/);
@@ -126,7 +129,10 @@ Deno.test("GET /health permanece disponível", async () => {
     response.headers.get("content-type"),
     "application/json; charset=utf-8",
   );
-  assertEquals(body, '{"ok":true}');
+  assertEquals(
+    body,
+    '{"ok":true,"service":"calculadora-financeira-ifactory-rewo","version":"1.0.0"}',
+  );
 });
 
 Deno.test("GET /api/visits permanece disponível", async () => {

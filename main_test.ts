@@ -27,7 +27,10 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /@media \(max-width: 400px\)/);
   assertMatch(body, /margin: 0 auto;/);
   assertMatch(body, /button\s*\{[\s\S]*?cursor: pointer;/);
-  assertMatch(body, /button\s*\{[\s\S]*?@media \(max-width: 400px\)[\s\S]*?width: 100%;/);
+  assertMatch(
+    body,
+    /button\s*\{[\s\S]*?@media \(max-width: 400px\)[\s\S]*?width: 100%;/,
+  );
   assertMatch(body, /<legend>Dados da simulação<\/legend>/);
   assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
   assertMatch(body, /name="principal"/);
@@ -59,6 +62,18 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
     /<form method="get" action="\/" aria-describedby="status-descricao">/,
   );
   assertMatch(body, /Resultado da simulação/);
+  assertMatch(body, /function limparErro\(\)/);
+  assertMatch(body, /function exibirErro\(mensagem\)/);
+  assertMatch(body, /function obterMensagemErro\(payload\)/);
+  assertMatch(body, /role="alert"/);
+  assertMatch(
+    body,
+    /Ocorreu um erro ao calcular\. Tente novamente em instantes\./,
+  );
+  assertMatch(
+    body,
+    /Não foi possível calcular no momento por falha de rede\. Tente novamente mais tarde\./,
+  );
   assertNotMatch(body, /novalidate/);
 });
 
@@ -108,6 +123,55 @@ Deno.test("GET / exibe erros de validação quando necessário", async () => {
     /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert"><p>Informe um valor principal maior que zero\.<\/p>/,
   );
   assertNotMatch(body, /role="alert" hidden/);
+});
+
+Deno.test("POST /api/calcular retorna erro da API em pt-BR quando houver validação", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/calcular", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        principal: "0",
+        taxaMensal: "1,5",
+        meses: "12",
+      }),
+    }),
+  );
+  const body = await response.text();
+
+  assertEquals(response.status, 400);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertMatch(body, /"message":"Informe um valor principal maior que zero\."/);
+});
+
+Deno.test("POST /api/calcular calcula com sucesso", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/calcular", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        principal: "1000,00",
+        taxaMensal: "1,5",
+        meses: "12",
+      }),
+    }),
+  );
+  const body = await response.text();
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertMatch(body, /"total":/);
+  assertMatch(body, /"totalFormatado":"R\$/);
 });
 
 Deno.test("GET / não referencia frameworks ou dependências externas", async () => {

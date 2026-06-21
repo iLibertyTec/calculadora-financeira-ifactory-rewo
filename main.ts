@@ -239,109 +239,86 @@ function renderHomePage(url: URL): string {
         color: var(--ink);
       }
 
-      .hint {
-        margin: 0;
-        font-size: 0.9rem;
-        color: var(--muted);
-      }
-
       input {
         width: 100%;
-        inline-size: 100%;
-        min-width: 0;
         padding: 12px 14px;
         border: 1px solid var(--border);
         border-radius: 12px;
-        font: inherit;
+        font-size: 1rem;
         color: var(--ink);
-        background: #ffffff;
+        background: #fff;
       }
 
       input:focus {
-        outline: 3px solid rgba(29, 78, 216, 0.18);
-        outline-offset: 1px;
+        outline: 3px solid rgba(29, 78, 216, 0.2);
         border-color: var(--accent);
+      }
+
+      small {
+        color: var(--muted);
+        line-height: 1.5;
       }
 
       button {
         appearance: none;
         border: 0;
         border-radius: 12px;
-        padding: 14px 18px;
-        font: inherit;
+        padding: 14px 20px;
+        background: var(--accent);
+        color: #fff;
         font-weight: 700;
-        color: #ffffff;
-        background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+        font-size: 1rem;
         cursor: pointer;
-        box-shadow: 0 10px 24px rgba(29, 78, 216, 0.22);
+        transition: background 0.2s ease;
       }
 
-      button:hover {
-        filter: brightness(1.03);
+      button:hover,
+      button:focus-visible {
+        background: var(--accent-strong);
       }
 
-      button:focus {
-        outline: 3px solid rgba(29, 78, 216, 0.2);
-        outline-offset: 2px;
-      }
-
-      .feedback {
+      .status {
+        margin-top: 20px;
         display: grid;
         gap: 12px;
-        padding: 18px;
-        border: 1px solid var(--border);
-        border-radius: 16px;
-        background: #ffffff;
       }
 
-      .feedback h2 {
+      #status-descricao {
         margin: 0;
-        font-size: 1.05rem;
-        color: var(--ink);
       }
 
-      #resultado,
+      output,
       [role="alert"] {
         display: block;
-        padding: 14px 16px;
-        border-radius: 12px;
+        padding: 16px;
+        border-radius: 14px;
         border: 1px solid transparent;
         word-break: break-word;
       }
 
-      #resultado:empty {
-        display: none;
-      }
-
       #resultado {
-        color: var(--success-ink);
         background: var(--success-bg);
         border-color: var(--success-border);
+        color: var(--success-ink);
       }
 
       #resultado strong {
-        color: #14532d;
+        color: inherit;
       }
 
-      [role="alert"] {
-        color: var(--danger);
+      #erro {
         background: var(--danger-bg);
         border-color: var(--danger-border);
+        color: var(--danger);
       }
 
-      [role="alert"] p {
+      #erro p {
         margin: 0;
         color: inherit;
       }
 
-      [role="alert"] p + p {
+      #erro p + p {
         margin-top: 8px;
-      }
-
-      .footer-note {
-        margin-top: 20px;
-        font-size: 0.95rem;
-        color: var(--muted);
       }
 
       @media (max-width: 900px) {
@@ -359,42 +336,33 @@ function renderHomePage(url: URL): string {
           padding: 24px;
           border-radius: 18px;
         }
-
-        fieldset,
-        .feedback {
-          padding: 16px;
-        }
       }
 
       @media (max-width: 400px) {
         .card {
-          padding: 18px;
-        }
-
-        fieldset,
-        .feedback {
-          padding: 14px;
+          padding: 20px;
         }
 
         button {
           width: 100%;
-          inline-size: 100%;
         }
       }
     </style>
   </head>
   <body>
     <main>
-      <section class="card" aria-labelledby="page-title">
-        <div class="eyebrow">iFactory • Simulação financeira</div>
-        <h1 id="page-title">Calculadora Financeira iFactory</h1>
+      <section class="card" aria-labelledby="titulo-pagina">
+        <div class="eyebrow">iFactory • Simulador</div>
+        <h1 id="titulo-pagina">Calculadora financeira</h1>
         <p>
-          Simule rapidamente o montante final com juros compostos a partir do valor principal,
-          da taxa mensal e do período informado.
+          Simule o montante final com juros compostos informando o valor
+          principal, a taxa mensal e o prazo em meses.
         </p>
+
         <form method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
+
             <div class="grid">
               <div class="field">
                 <label for="principal">Valor principal *</label>
@@ -405,11 +373,14 @@ function renderHomePage(url: URL): string {
                   inputmode="decimal"
                   placeholder="Ex.: 1000,00"
                   value="${escapeHtml(principalValue)}"
-                  aria-describedby="principal-ajuda"
                   required
+                  aria-describedby="principal-ajuda"
                 />
-                <p id="principal-ajuda" class="hint">Use vírgula ou ponto para separar os centavos.</p>
+                <small id="principal-ajuda">
+                  Informe o valor inicial do investimento ou aplicação.
+                </small>
               </div>
+
               <div class="field">
                 <label for="taxaMensal">Taxa mensal (%) *</label>
                 <input
@@ -419,11 +390,14 @@ function renderHomePage(url: URL): string {
                   inputmode="decimal"
                   placeholder="Ex.: 1,50"
                   value="${escapeHtml(monthlyRateValue)}"
-                  aria-describedby="taxaMensal-ajuda"
                   required
+                  aria-describedby="taxaMensal-ajuda"
                 />
-                <p id="taxaMensal-ajuda" class="hint">Informe a taxa percentual aplicada a cada mês.</p>
+                <small id="taxaMensal-ajuda">
+                  Use ponto ou vírgula para representar casas decimais.
+                </small>
               </div>
+
               <div class="field">
                 <label for="meses">Meses *</label>
                 <input
@@ -433,24 +407,146 @@ function renderHomePage(url: URL): string {
                   inputmode="numeric"
                   placeholder="Ex.: 12"
                   value="${escapeHtml(monthsValue)}"
-                  aria-describedby="meses-ajuda"
                   required
+                  aria-describedby="meses-ajuda"
                 />
-                <p id="meses-ajuda" class="hint">Digite um número inteiro maior que zero.</p>
+                <small id="meses-ajuda">
+                  Informe somente números inteiros positivos.
+                </small>
               </div>
             </div>
-            <button type="submit">Calcular</button>
           </fieldset>
-          <section class="feedback" aria-labelledby="resultado-titulo">
-            <h2 id="resultado-titulo">Resultado da simulação</h2>
-            <p id="status-descricao">${escapeHtml(statusDescription)}</p>
-            ${resultSection}
-            ${errorSection}
-          </section>
+
+          <button type="submit">Calcular</button>
         </form>
-        <p class="footer-note">${escapeHtml(formatCounterMessage(counter.peek()))}</p>
+
+        <section class="status" aria-labelledby="resultado-titulo">
+          <h2 id="resultado-titulo">Resultado da simulação</h2>
+          <p id="status-descricao">${escapeHtml(statusDescription)}</p>
+          ${resultSection}
+          ${errorSection}
+        </section>
       </section>
     </main>
+
+    <script>
+      const form = document.querySelector("form");
+      const resultado = document.getElementById("resultado");
+      const erro = document.getElementById("erro");
+      const statusDescricao = document.getElementById("status-descricao");
+
+      function limparErro() {
+        erro.innerHTML = "";
+        erro.hidden = true;
+      }
+
+      function exibirErro(mensagem) {
+        resultado.innerHTML = "";
+        erro.innerHTML = "<p>" + mensagem + "</p>";
+        erro.hidden = false;
+        statusDescricao.textContent = "Não foi possível concluir a simulação.";
+      }
+
+      function obterMensagemErro(payload) {
+        if (!payload || typeof payload !== "object") {
+          return null;
+        }
+
+        if (typeof payload.message === "string" && payload.message.trim() !== "") {
+          return payload.message.trim();
+        }
+
+        if (typeof payload.erro === "string" && payload.erro.trim() !== "") {
+          return payload.erro.trim();
+        }
+
+        return null;
+      }
+
+      async function calcularViaApi(event) {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+
+        for (const [chave, valor] of formData.entries()) {
+          params.set(chave, String(valor));
+        }
+
+        try {
+          const response = await fetch("/api/calcular", {
+            method: "POST",
+            headers: {
+              "content-type": "application/json",
+            },
+            body: JSON.stringify({
+              principal: formData.get("principal"),
+              taxaMensal: formData.get("taxaMensal"),
+              meses: formData.get("meses"),
+            }),
+          });
+
+          const responseText = await response.text();
+          let payload = null;
+
+          if (responseText.trim() !== "") {
+            try {
+              payload = JSON.parse(responseText);
+            } catch {
+              payload = null;
+            }
+          }
+
+          if (!response.ok) {
+            const mensagemApi = obterMensagemErro(payload);
+            exibirErro(
+              mensagemApi ??
+                "Ocorreu um erro ao calcular. Tente novamente em instantes.",
+            );
+            return;
+          }
+
+          const redirectUrl = "/?" + params.toString();
+          const pageResponse = await fetch(redirectUrl, {
+            headers: {
+              "x-requested-with": "fetch",
+            },
+          });
+
+          if (!pageResponse.ok) {
+            exibirErro(
+              "Ocorreu um erro ao atualizar o resultado. Tente novamente em instantes.",
+            );
+            return;
+          }
+
+          const html = await pageResponse.text();
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          const novoResultado = doc.getElementById("resultado");
+          const novaDescricao = doc.getElementById("status-descricao");
+
+          if (novoResultado && novaDescricao) {
+            resultado.innerHTML = novoResultado.innerHTML;
+            statusDescricao.textContent = novaDescricao.textContent ?? "";
+            limparErro();
+            history.replaceState(null, "", redirectUrl);
+            return;
+          }
+
+          exibirErro(
+            "Ocorreu um erro ao atualizar o resultado. Tente novamente em instantes.",
+          );
+        } catch {
+          exibirErro(
+            "Não foi possível calcular no momento por falha de rede. Tente novamente mais tarde.",
+          );
+        }
+      }
+
+      if (form && resultado && erro && statusDescricao) {
+        form.addEventListener("submit", calcularViaApi);
+      }
+    </script>
   </body>
 </html>`;
 }
@@ -464,37 +560,95 @@ function jsonResponse(body: string, status = 200): Response {
   });
 }
 
-function htmlResponse(body: string): Response {
-  return new Response(body, {
-    status: 200,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-    },
-  });
+async function handleCalculationApi(request: Request): Promise<Response> {
+  try {
+    const body = await request.json();
+    const principal = parseDecimal(String(body.principal ?? ""));
+    const monthlyRate = parseDecimal(String(body.taxaMensal ?? ""));
+    const months = parseInteger(String(body.meses ?? ""));
+
+    if (principal === null || principal <= 0) {
+      return jsonResponse(
+        JSON.stringify({
+          message: "Informe um valor principal maior que zero.",
+        }),
+        400,
+      );
+    }
+
+    if (monthlyRate === null || monthlyRate < 0) {
+      return jsonResponse(
+        JSON.stringify({
+          message: "Informe uma taxa mensal válida, igual ou maior que zero.",
+        }),
+        400,
+      );
+    }
+
+    if (months === null || months <= 0) {
+      return jsonResponse(
+        JSON.stringify({
+          message:
+            "Informe a quantidade de meses com número inteiro maior que zero.",
+        }),
+        400,
+      );
+    }
+
+    const total = calculateCompoundAmount(principal, monthlyRate, months);
+
+    return jsonResponse(
+      JSON.stringify({
+        total,
+        totalFormatado: formatCurrency(total),
+      }),
+    );
+  } catch {
+    return jsonResponse(
+      JSON.stringify({
+        message: "Não foi possível processar a solicitação no momento.",
+      }),
+      500,
+    );
+  }
 }
 
-export function handler(request: Request): Response {
+export async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
   if (url.pathname === "/health") {
-    return jsonResponse('{"ok":true,"service":"calculadora-financeira-ifactory-rewo","version":"1.0.0"}');
-  }
-
-  if (url.pathname === "/api/visits") {
     return jsonResponse(
       JSON.stringify({
-        visits: counter.peek(),
-        message: formatCounterMessage(counter.peek()),
+        ok: true,
+        service: "calculadora-financeira-ifactory-rewo",
+        version: "1.0.0",
       }),
     );
   }
 
-  if (url.pathname !== "/") {
-    return new Response("Not Found", { status: 404 });
+  if (url.pathname === "/api/visits") {
+    const visits = counter.increment();
+    return jsonResponse(
+      JSON.stringify({
+        visits,
+        message: formatCounterMessage(visits),
+      }),
+    );
   }
 
-  counter.increment();
-  return htmlResponse(renderHomePage(url));
+  if (url.pathname === "/api/calcular" && request.method === "POST") {
+    return await handleCalculationApi(request);
+  }
+
+  if (url.pathname === "/") {
+    return new Response(renderHomePage(url), {
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
+    });
+  }
+
+  return new Response("Not Found", { status: 404 });
 }
 
 if (import.meta.main) {

@@ -47,15 +47,6 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function calculateCompoundAmount(
-  principal: number,
-  monthlyRatePercent: number,
-  months: number,
-): number {
-  const rate = monthlyRatePercent / 100;
-  return principal * (1 + rate) ** months;
-}
-
 function validateSimulationInput(
   principalValue: string,
   monthlyRateValue: string,
@@ -116,7 +107,7 @@ function renderHomePage(url: URL): string {
         `<p>${escapeHtml(error)}</p>`
       ).join("");
     } else {
-      const total = calculateCompoundAmount(
+      const total = calcularJurosCompostos(
         validation.principal as number,
         validation.monthlyRate as number,
         validation.months as number,
@@ -127,6 +118,8 @@ function renderHomePage(url: URL): string {
         `Montante final estimado: <strong>${escapeHtml(formatCurrency(total))}</strong>.`;
     }
   }
+
+  const errorHiddenAttribute = errorHtml === "" ? " hidden" : "";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -264,21 +257,13 @@ function renderHomePage(url: URL): string {
       #resultado p {
         margin: 0;
       }
-
-      [hidden] {
-        display: none;
-      }
     </style>
   </head>
   <body>
     <main>
-      <section class="card" aria-labelledby="titulo-principal">
-        <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
-        <p>
-          Informe os dados abaixo para calcular uma simulação financeira com
-          valor principal, taxa mensal e prazo em meses.
-        </p>
-
+      <section class="card" aria-labelledby="titulo">
+        <h1 id="titulo">Calculadora Financeira iFactory</h1>
+        <p>Simule juros compostos informando o valor principal, a taxa mensal e o período em meses.</p>
         <form id="calculadora-form" method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
@@ -295,9 +280,7 @@ function renderHomePage(url: URL): string {
                 required
                 aria-describedby="principal-ajuda"
               />
-              <p id="principal-ajuda" class="hint">
-                Informe o valor inicial da aplicação.
-              </p>
+              <p id="principal-ajuda" class="hint">Use vírgula ou ponto para representar centavos.</p>
             </div>
 
             <div class="field">
@@ -312,9 +295,7 @@ function renderHomePage(url: URL): string {
                 required
                 aria-describedby="taxaMensal-ajuda"
               />
-              <p id="taxaMensal-ajuda" class="hint">
-                Use porcentagem mensal, aceitando vírgula ou ponto.
-              </p>
+              <p id="taxaMensal-ajuda" class="hint">Informe a taxa percentual aplicada a cada mês.</p>
             </div>
 
             <div class="field">
@@ -329,9 +310,7 @@ function renderHomePage(url: URL): string {
                 required
                 aria-describedby="meses-ajuda"
               />
-              <p id="meses-ajuda" class="hint">
-                Informe um número inteiro de meses para a simulação.
-              </p>
+              <p id="meses-ajuda" class="hint">Digite a quantidade de meses como número inteiro.</p>
             </div>
           </fieldset>
 
@@ -342,7 +321,7 @@ function renderHomePage(url: URL): string {
           <h2 id="resultado-titulo">Resultado da simulação</h2>
           <p id="status-descricao">${escapeHtml(statusDescription)}</p>
           <output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>
-          <div id="erro" aria-live="assertive" aria-atomic="true" role="alert"${errorHtml === "" ? " hidden" : ""}>${errorHtml}</div>
+          <div id="erro" aria-live="assertive" aria-atomic="true" role="alert"${errorHiddenAttribute}>${errorHtml}</div>
         </section>
       </section>
     </main>
@@ -356,33 +335,22 @@ function renderHomePage(url: URL): string {
       const statusDescricao = document.getElementById("status-descricao");
       const botao = document.getElementById("calcular");
 
-      function limparMensagens() {
-        resultado.textContent = "";
-        erro.replaceChildren();
-        erro.hidden = true;
-      }
-
-      function exibirErros(messages) {
-        erro.replaceChildren();
-        for (const message of messages) {
-          const paragraph = document.createElement("p");
-          paragraph.textContent = message;
-          erro.appendChild(paragraph);
-        }
-        erro.hidden = messages.length === 0;
-      }
-
-      if (form instanceof HTMLFormElement &&
-        principalInput instanceof HTMLInputElement &&
-        taxaMensalInput instanceof HTMLInputElement &&
-        mesesInput instanceof HTMLInputElement &&
-        resultado instanceof HTMLOutputElement &&
-        erro instanceof HTMLDivElement &&
-        statusDescricao instanceof HTMLParagraphElement &&
-        botao instanceof HTMLButtonElement) {
+      if (
+        form &&
+        principalInput &&
+        taxaMensalInput &&
+        mesesInput &&
+        resultado &&
+        erro &&
+        statusDescricao &&
+        botao
+      ) {
         form.addEventListener("submit", async (event) => {
           event.preventDefault();
-          limparMensagens();
+
+          resultado.innerHTML = "";
+          erro.innerHTML = "";
+          erro.hidden = true;
           statusDescricao.textContent = "Calculando simulação...";
           botao.disabled = true;
 
@@ -399,26 +367,46 @@ function renderHomePage(url: URL): string {
               }),
             });
 
-            const data = await response.json();
+            let data;
+
+            try {
+              data = await response.json();
+            } catch (_error) {
+              throw new Error("Não foi possível interpretar a resposta do servidor.");
+            }
 
             if (!response.ok) {
-              const messages = Array.isArray(data.errors) && data.errors.length > 0
+              const messages = Array.isArray(data?.errors) && data.errors.length > 0
                 ? data.errors
-                : [data.error || "Não foi possível calcular a simulação."];
-              exibirErros(messages);
+                : [data?.error || "Não foi possível calcular a simulação."];
+
+              erro.hidden = false;
+              messages.forEach((message) => {
+                const paragraph = document.createElement("p");
+                paragraph.textContent = message;
+                erro.appendChild(paragraph);
+              });
               statusDescricao.textContent =
-                "Não foi possível concluir a simulação sem recarregar. Revise os dados ou tente novamente.";
+                "Há erros no preenchimento. Revise os campos informados.";
               return;
             }
 
+            resultado.innerHTML =
+              'Montante final estimado: <strong>' +
+              data.montanteFormatado +
+              '</strong>.';
             statusDescricao.textContent =
               "Simulação calculada com sucesso. Confira o resultado abaixo.";
-            resultado.textContent =
-              "Montante final estimado: " + data.montanteFormatado + ".";
-          } catch (_error) {
+          } catch (error) {
+            erro.hidden = false;
+            const paragraph = document.createElement("p");
+            const message = error instanceof Error
+              ? error.message
+              : "Não foi possível calcular a simulação.";
+            paragraph.textContent = message;
+            erro.appendChild(paragraph);
             statusDescricao.textContent =
-              "Falha ao calcular sem recarregar. Enviando pelo modo tradicional...";
-            form.submit();
+              "Não foi possível calcular a simulação no momento.";
           } finally {
             botao.disabled = false;
           }
@@ -429,7 +417,7 @@ function renderHomePage(url: URL): string {
 </html>`;
 }
 
-function jsonResponse(body: unknown, status: number): Response {
+function jsonResponse(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
@@ -440,54 +428,39 @@ function jsonResponse(body: unknown, status: number): Response {
 
 async function handleCompoundInterestApi(request: Request): Promise<Response> {
   const contentType = request.headers.get("content-type") ?? "";
+
   if (!contentType.toLowerCase().includes("application/json")) {
-    return jsonResponse(
-      {
-        error: "Envie o corpo da requisição em JSON.",
-        errors: ["Envie o corpo da requisição em JSON."],
-      },
-      400,
-    );
+    const errorMessage = "Envie o corpo da requisição em JSON.";
+    return jsonResponse({ error: errorMessage, errors: [errorMessage] }, 400);
   }
 
   let payload: Record<string, unknown>;
 
   try {
-    const parsed = await request.json();
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      return jsonResponse(
-        {
-          error: "Envie um objeto JSON válido.",
-          errors: ["Envie um objeto JSON válido."],
-        },
-        400,
-      );
-    }
-    payload = parsed as Record<string, unknown>;
+    payload = await request.json();
   } catch {
-    return jsonResponse(
-      {
-        error: "JSON inválido no corpo da requisição.",
-        errors: ["JSON inválido no corpo da requisição."],
-      },
-      400,
-    );
+    const errorMessage = "JSON inválido no corpo da requisição.";
+    return jsonResponse({ error: errorMessage, errors: [errorMessage] }, 400);
   }
 
-  const principalValue = String(payload.principal ?? "");
-  const monthlyRateValue = String(payload.taxaMensal ?? "");
-  const monthsValue = String(payload.meses ?? "");
+  const principalValue = typeof payload.principal === "string"
+    ? payload.principal
+    : null;
+  const monthlyRateValue = typeof payload.taxaMensal === "string"
+    ? payload.taxaMensal
+    : null;
+  const monthsValue = typeof payload.meses === "string" ? payload.meses : null;
 
   const validation = validateSimulationInput(
-    principalValue,
-    monthlyRateValue,
-    monthsValue,
+    principalValue ?? "",
+    monthlyRateValue ?? "",
+    monthsValue ?? "",
   );
 
   if (validation.errors.length > 0) {
     return jsonResponse(
       {
-        error: "Dados inválidos para calcular juros compostos.",
+        error: validation.errors[0],
         errors: validation.errors,
       },
       400,
@@ -500,28 +473,60 @@ async function handleCompoundInterestApi(request: Request): Promise<Response> {
     validation.months as number,
   );
 
-  return jsonResponse(
-    {
-      montante,
-      montanteFormatado: formatCurrency(montante),
+  return jsonResponse({
+    principal: validation.principal,
+    taxaMensal: validation.monthlyRate,
+    meses: validation.months,
+    montante,
+    montanteFormatado: formatCurrency(montante),
+  });
+}
+
+function handleVisits(request: Request): Response {
+  if (request.method === "POST") {
+    const count = counter.increment();
+    return jsonResponse({
+      count,
+      message: formatCounterMessage(count),
+    });
+  }
+
+  if (request.method === "GET") {
+    return jsonResponse({
+      count: counter.current(),
+      message: formatCounterMessage(counter.current()),
+    });
+  }
+
+  return new Response("Method Not Allowed", {
+    status: 405,
+    headers: {
+      allow: "GET, POST",
     },
-    200,
-  );
+  });
 }
 
 export async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
-  if (request.method === "GET" && url.pathname === "/api/visits") {
-    const visits = counter.increment();
-    return jsonResponse({ message: formatCounterMessage(visits), visits }, 200);
-  }
+  if (url.pathname === "/api/juros-compostos") {
+    if (request.method !== "POST") {
+      return new Response("Method Not Allowed", {
+        status: 405,
+        headers: {
+          allow: "POST",
+        },
+      });
+    }
 
-  if (request.method === "POST" && url.pathname === "/api/juros-compostos") {
     return await handleCompoundInterestApi(request);
   }
 
-  if (request.method === "GET" && url.pathname === "/") {
+  if (url.pathname === "/api/visits") {
+    return handleVisits(request);
+  }
+
+  if (url.pathname === "/" && request.method === "GET") {
     return new Response(renderHomePage(url), {
       status: 200,
       headers: {

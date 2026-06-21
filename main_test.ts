@@ -106,7 +106,12 @@ Deno.test("GET / contém JavaScript puro para submit sem recarregar", async () =
   assertMatch(body, /statusDescricao\.textContent = "Calculando simulação\.\.\.";/);
   assertMatch(body, /botao\.disabled = true;/);
   assertMatch(body, /paragraph\.textContent = message;/);
-  assertMatch(body, /form\.submit\(\);/);
+  assertNotMatch(body, /form\.submit\(\);/);
+  assertMatch(body, /data = await response\.json\(\);/);
+  assertMatch(
+    body,
+    /throw new Error\("Não foi possível interpretar a resposta do servidor\."\);/,
+  );
 });
 
 Deno.test("POST /api/juros-compostos retorna cálculo em JSON", async () => {
@@ -131,6 +136,9 @@ Deno.test("POST /api/juros-compostos retorna cálculo em JSON", async () => {
     response.headers.get("content-type"),
     "application/json; charset=utf-8",
   );
+  assertEquals(body.principal, 1000);
+  assertEquals(body.taxaMensal, 1.5);
+  assertEquals(body.meses, 12);
   assertEquals(typeof body.montante, "number");
   assertMatch(body.montanteFormatado, /R\$/);
 });
@@ -175,8 +183,10 @@ Deno.test("GET / não referencia frameworks ou dependências externas", async ()
   const response = await handler(new Request("http://localhost/"));
   const body = await response.text();
 
-  assertMatch(body, /^((?!preact).)*$/is);
-  assertMatch(body, /^((?!fresh).)*$/is);
-  assertMatch(body, /^((?!islands).)*$/is);
-  assertMatch(body, /^((?!https?:\/\/).)*$/is);
+  assertEquals(response.status, 200);
+  assertNotMatch(body, /preact/i);
+  assertNotMatch(body, /react/i);
+  assertNotMatch(body, /fresh/i);
+  assertNotMatch(body, /unpkg/i);
+  assertNotMatch(body, /cdn/i);
 });

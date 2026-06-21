@@ -69,7 +69,7 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertNotMatch(body, /novalidate/);
 });
 
-Deno.test("GET / processa a simulação pela query string", async () => {
+Deno.test("GET / processa a simulação pela query string com valores em BRL", async () => {
   const response = await handler(
     new Request(
       "http://localhost/?principal=1000,00&taxaMensal=1,5&meses=12",
@@ -81,14 +81,12 @@ Deno.test("GET / processa a simulação pela query string", async () => {
   assertMatch(body, /Simulação calculada com sucesso/);
   assertMatch(body, /Montante final estimado:/);
   assertMatch(body, /Juros totais:/);
-  assertMatch(body, /data-amount="[^"]+"/);
-  assertMatch(body, /data-interest="[^"]+"/);
   assertMatch(
     body,
     /Intl\.NumberFormat\("pt-BR",\s*\{[\s\S]*currency:\s*"BRL"/,
   );
-  assertMatch(body, /Montante final estimado:\s*<strong data-amount="[^"]+">R\$/);
-  assertMatch(body, /Juros totais:\s*<strong data-interest="[^"]+">R\$/);
+  assertMatch(body, /Montante final estimado:\s*<strong>R\$\s*1\.195,62<\/strong>/);
+  assertMatch(body, /Juros totais:\s*<strong>R\$\s*195,62<\/strong>/);
   assertMatch(body, /value="1000,00"/);
   assertMatch(body, /value="1,5"/);
   assertMatch(body, /value="12"/);
@@ -97,6 +95,8 @@ Deno.test("GET / processa a simulação pela query string", async () => {
     body,
     /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,
   );
+  assertNotMatch(body, /data-amount=/);
+  assertNotMatch(body, /data-interest=/);
 });
 
 Deno.test("GET / exibe erros de validação quando necessário", async () => {

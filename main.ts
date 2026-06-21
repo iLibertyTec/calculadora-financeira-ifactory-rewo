@@ -103,8 +103,8 @@ function renderHomePage(url: URL): string {
       statusDescription =
         "Simulação calculada com sucesso. Confira o resultado abaixo.";
       resultHtml = `
-        <p>Montante final estimado: <strong data-amount="${escapeHtml(String(total))}">${escapeHtml(formattedTotal)}</strong>.</p>
-        <p>Juros totais: <strong data-interest="${escapeHtml(String(totalInterest))}">${escapeHtml(formattedTotalInterest)}</strong>.</p>
+        <p>Montante final estimado: <strong>${escapeHtml(formattedTotal)}</strong>.</p>
+        <p>Juros totais: <strong>${escapeHtml(formattedTotalInterest)}</strong>.</p>
       `;
     }
   }
@@ -218,8 +218,6 @@ function renderHomePage(url: URL): string {
         padding: 20px;
         border: 1px solid var(--border);
         border-radius: 16px;
-        display: grid;
-        gap: 16px;
         background: #fcfdff;
       }
 
@@ -231,13 +229,16 @@ function renderHomePage(url: URL): string {
 
       .grid {
         display: grid;
-        gap: 16px;
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+      }
+
+      .field {
+        display: grid;
+        gap: 8px;
       }
 
       label {
-        display: block;
-        margin-bottom: 8px;
         font-weight: 700;
         color: var(--ink);
       }
@@ -247,7 +248,7 @@ function renderHomePage(url: URL): string {
         padding: 12px 14px;
         border: 1px solid var(--border);
         border-radius: 12px;
-        font: inherit;
+        font-size: 1rem;
         color: var(--ink);
         background: #fff;
       }
@@ -257,9 +258,7 @@ function renderHomePage(url: URL): string {
         border-color: var(--accent);
       }
 
-      .hint {
-        margin: 8px 0 0;
-        font-size: 0.92rem;
+      small {
         color: var(--muted);
       }
 
@@ -267,62 +266,45 @@ function renderHomePage(url: URL): string {
         border: 0;
         border-radius: 12px;
         padding: 14px 18px;
-        background: var(--accent);
-        color: #fff;
-        font: inherit;
+        font-size: 1rem;
         font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+        box-shadow: 0 10px 20px rgba(29, 78, 216, 0.22);
         cursor: pointer;
       }
 
       button:hover {
-        background: var(--accent-strong);
+        filter: brightness(1.03);
+      }
+
+      .status {
+        margin-top: 18px;
+        padding: 16px;
+        border-radius: 14px;
+        border: 1px solid var(--border);
+        background: #f8fafc;
       }
 
       output,
       [role="alert"] {
         display: block;
-        margin-top: 8px;
-        padding: 16px 18px;
-        border-radius: 16px;
-        border: 1px solid transparent;
         word-break: break-word;
-      }
-
-      output {
-        background: var(--success-bg);
-        border-color: var(--success-border);
-        color: var(--success-ink);
-      }
-
-      #resultado p,
-      #erro p {
-        margin: 0;
-      }
-
-      #resultado p + p,
-      #erro p + p {
-        margin-top: 12px;
       }
 
       #resultado strong {
         color: var(--success-ink);
       }
 
-      [role="alert"] {
-        background: var(--danger-bg);
+      #erro {
         border-color: var(--danger-border);
+        background: var(--danger-bg);
         color: var(--danger);
-      }
-
-      .footer {
-        margin-top: 24px;
-        font-size: 0.95rem;
-        color: var(--muted);
       }
 
       @media (max-width: 900px) {
         .card {
-          max-width: 100%;
+          max-width: 680px;
         }
       }
 
@@ -333,13 +315,13 @@ function renderHomePage(url: URL): string {
 
         .card {
           padding: 24px;
-          border-radius: 18px;
+          border-radius: 16px;
         }
       }
 
       @media (max-width: 400px) {
         .card {
-          padding: 20px;
+          padding: 18px;
         }
 
         button {
@@ -351,17 +333,18 @@ function renderHomePage(url: URL): string {
   <body>
     <main>
       <section class="card" aria-labelledby="titulo-principal">
-        <div class="eyebrow">iFactory • Simulador financeiro</div>
+        <div class="eyebrow">${escapeHtml(formatCounterMessage(counter.increment()))}</div>
         <h1 id="titulo-principal">Calculadora de juros compostos</h1>
         <p>
-          Informe os dados abaixo para estimar o montante acumulado e os juros
-          totais da aplicação.
+          Simule o montante acumulado com base no valor principal, na taxa mensal e
+          no período informado.
         </p>
+
         <form method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
             <div class="grid">
-              <div>
+              <div class="field">
                 <label for="principal">Valor principal *</label>
                 <input
                   id="principal"
@@ -373,11 +356,10 @@ function renderHomePage(url: URL): string {
                   required
                   aria-describedby="principal-ajuda"
                 />
-                <p id="principal-ajuda" class="hint">
-                  Digite o valor inicial da aplicação em reais.
-                </p>
+                <small id="principal-ajuda">Informe o valor inicial da aplicação.</small>
               </div>
-              <div>
+
+              <div class="field">
                 <label for="taxaMensal">Taxa mensal (%) *</label>
                 <input
                   id="taxaMensal"
@@ -389,11 +371,10 @@ function renderHomePage(url: URL): string {
                   required
                   aria-describedby="taxaMensal-ajuda"
                 />
-                <p id="taxaMensal-ajuda" class="hint">
-                  Informe a taxa percentual aplicada ao mês.
-                </p>
+                <small id="taxaMensal-ajuda">Use porcentagem mensal, com ponto ou vírgula.</small>
               </div>
-              <div>
+
+              <div class="field">
                 <label for="meses">Meses *</label>
                 <input
                   id="meses"
@@ -405,95 +386,65 @@ function renderHomePage(url: URL): string {
                   required
                   aria-describedby="meses-ajuda"
                 />
-                <p id="meses-ajuda" class="hint">
-                  Use um número inteiro de meses para a simulação.
-                </p>
+                <small id="meses-ajuda">Digite a quantidade de meses em número inteiro.</small>
               </div>
             </div>
-            <button type="submit">Calcular</button>
           </fieldset>
+
+          <button type="submit">Calcular</button>
         </form>
 
-        <p id="status-descricao" class="hint">${escapeHtml(statusDescription)}</p>
-
-        <section aria-labelledby="resultado-titulo">
+        <section class="status" aria-labelledby="resultado-titulo">
           <h2 id="resultado-titulo">Resultado da simulação</h2>
+          <p id="status-descricao">${escapeHtml(statusDescription)}</p>
           ${resultSection}
           ${errorSection}
         </section>
-
-        <p class="footer">${escapeHtml(formatCounterMessage(counter.incrementAndGetVisits()))}</p>
       </section>
     </main>
-    <script>
-      const currencyFormatter = new Intl.NumberFormat("pt-BR", {
-        style: "currency",
-        currency: "BRL",
-      });
-
-      for (const element of document.querySelectorAll("[data-amount], [data-interest]")) {
-        const rawValue = element.getAttribute("data-amount") ??
-          element.getAttribute("data-interest");
-
-        if (rawValue === null) {
-          continue;
-        }
-
-        const parsedValue = Number(rawValue);
-        if (!Number.isFinite(parsedValue)) {
-          continue;
-        }
-
-        element.textContent = currencyFormatter.format(parsedValue);
-      }
-    </script>
   </body>
 </html>`;
 }
 
-function jsonResponse(body: string, status = 200): Response {
-  return new Response(body, {
-    status,
-    headers: {
-      "content-type": "application/json; charset=utf-8",
-    },
-  });
-}
-
-function htmlResponse(body: string, status = 200): Response {
-  return new Response(body, {
-    status,
-    headers: {
-      "content-type": "text/html; charset=utf-8",
-    },
-  });
-}
-
-export function handler(request: Request): Response {
+export function handler(request: Request): Response | Promise<Response> {
   const url = new URL(request.url);
 
   if (url.pathname === "/health") {
-    return jsonResponse(
+    return new Response(
       JSON.stringify({
         ok: true,
         service: "calculadora-financeira-ifactory-rewo",
         version: "1.0.0",
       }),
+      {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+        },
+      },
     );
   }
 
   if (url.pathname === "/api/visits") {
-    const visits = counter.incrementAndGetVisits();
-    return jsonResponse(
+    const visits = counter.increment();
+    return new Response(
       JSON.stringify({
         visits,
         message: formatCounterMessage(visits),
       }),
+      {
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+        },
+      },
     );
   }
 
   if (url.pathname === "/") {
-    return htmlResponse(renderHomePage(url));
+    return new Response(renderHomePage(url), {
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
+    });
   }
 
   return new Response("Not Found", { status: 404 });

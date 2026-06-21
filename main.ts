@@ -11,6 +11,16 @@ function jsonError(message: string, status: number = 400): Response {
   return Response.json({ erro: message }, { status });
 }
 
+function methodNotAllowed(allow: string): Response {
+  return new Response(JSON.stringify({ erro: "Método não permitido." }), {
+    status: 405,
+    headers: {
+      "content-type": "application/json",
+      "allow": allow,
+    },
+  });
+}
+
 function roundTo(value: number, decimals: number): number {
   return Number(value.toFixed(decimals));
 }
@@ -46,7 +56,11 @@ export async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (url.pathname === "/api/juros-compostos" && req.method === "POST") {
+  if (url.pathname === "/api/juros-compostos") {
+    if (req.method !== "POST") {
+      return methodNotAllowed("POST");
+    }
+
     const parsed = await parseJurosCompostosRequest(req);
 
     if (parsed instanceof Response) {

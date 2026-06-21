@@ -37,6 +37,17 @@ deno.test("POST /api/juros-compostos responde 200 com montante e jurosTotais", a
   });
 });
 
+deno.test("GET /api/juros-compostos responde 405 com Allow POST", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos"),
+  );
+
+  assertEquals(response.status, 405);
+  assertEquals(response.headers.get("content-type"), "application/json");
+  assertEquals(response.headers.get("allow"), "POST");
+  assertEquals(await response.json(), { erro: "Método não permitido." });
+});
+
 deno.test("POST /api/juros-compostos com JSON inválido responde 400", async () => {
   const response = await handler(
     new Request("http://localhost/api/juros-compostos", {

@@ -1,6 +1,70 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
+import { calcularJurosCompostos } from "./src/juros_compostos.ts";
 
 const counter = new VisitCounter();
+
+interface JurosCompostosPayload {
+  principal: number;
+  taxaMensal: number;
+  meses: number;
+}
+
+function validarCampoNumerico(
+  valor: unknown,
+  nomeCampo: "principal" | "taxaMensal" | "meses",
+): number {
+  if (typeof valor === "undefined") {
+    throw new TypeError(`${nomeCampo} é obrigatório.`);
+  }
+
+  if (
+    typeof valor !== "number" || Number.isNaN(valor) || !Number.isFinite(valor)
+  ) {
+    throw new TypeError(`${nomeCampo} deve ser um número finito.`);
+  }
+
+  return valor;
+}
+
+function validarRegrasDeDominio(
+  payload: JurosCompostosPayload,
+): JurosCompostosPayload {
+  if (payload.principal < 0) {
+    throw new RangeError("principal não pode ser negativo.");
+  }
+
+  if (payload.taxaMensal < 0) {
+    throw new RangeError("taxaMensal não pode ser negativa.");
+  }
+
+  if (payload.meses < 0) {
+    throw new RangeError("meses não pode ser negativo.");
+  }
+
+  if (!Number.isInteger(payload.meses)) {
+    throw new RangeError("meses deve ser um número inteiro.");
+  }
+
+  return payload;
+}
+
+function parseJurosCompostosPayload(body: unknown): JurosCompostosPayload {
+  if (typeof body !== "object" || body === null || Array.isArray(body)) {
+    throw new TypeError("Corpo da requisição deve ser um objeto JSON.");
+  }
+
+  const payload = body as Record<string, unknown>;
+
+  return validarRegrasDeDominio({
+    principal: validarCampoNumerico(payload.principal, "principal"),
+    taxaMensal: validarCampoNumerico(payload.taxaMensal, "taxaMensal"),
+    meses: validarCampoNumerico(payload.meses, "meses"),
+  });
+}
+
+function arredondarTresCasas(valor: number): number {
+  return Math.round(valor * 1000) / 1000;
+}
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -29,6 +93,48 @@ export async function handler(req: Request): Promise<Response> {
       ...state,
       message: formatCounterMessage(state),
     });
+  }
+
+  if (url.pathname === "/api/juros-compostos") {
+    if (req.method !== "POST") {
+      return Response.json(
+        { error: "Método não permitido." },
+        {
+          status: 405,
+          headers: { "allow": "POST" },
+        },
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json(
+        { error: "JSON inválido." },
+        { status: 400 },
+      );
+    }
+
+    try {
+      const payload = parseJurosCompostosPayload(body);
+      const resultado = calcularJurosCompostos(
+        payload.principal,
+        payload.taxaMensal,
+        payload.meses,
+      );
+
+      return Response.json({
+        montante: arredondarTresCasas(resultado.montante),
+        jurosTotais: arredondarTresCasas(resultado.jurosTotais),
+      });
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : "Dados inválidos.";
+      return Response.json({ error: message }, { status: 400 });
+    }
   }
 
   if (url.pathname === "/") {

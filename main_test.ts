@@ -45,6 +45,25 @@ Deno.test("handler calcula juros compostos em POST /api/juros-compostos", async 
   });
 });
 
+Deno.test("handler aceita content-type application/json com charset em /api/juros-compostos", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: { "content-type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        capitalInicial: 1000,
+        taxa: 0.1,
+        periodos: 2,
+      }),
+    }),
+  );
+
+  assertEquals(response.status, 200);
+  assertObjectMatch(await response.json(), {
+    montante: 1210,
+  });
+});
+
 Deno.test("handler retorna 415 sem content-type json em /api/juros-compostos", async () => {
   const response = await handler(
     new Request("http://localhost/api/juros-compostos", {
@@ -62,6 +81,25 @@ Deno.test("handler retorna 415 sem content-type json em /api/juros-compostos", a
     response.headers.get("content-type"),
     "application/json; charset=utf-8",
   );
+  assertObjectMatch(await response.json(), {
+    error: "unsupported media type",
+  });
+});
+
+Deno.test("handler retorna 415 para content-type ambíguo em /api/juros-compostos", async () => {
+  const response = await handler(
+    new Request("http://localhost/api/juros-compostos", {
+      method: "POST",
+      headers: { "content-type": "text/plain, application/json" },
+      body: JSON.stringify({
+        capitalInicial: 1000,
+        taxa: 0.1,
+        periodos: 2,
+      }),
+    }),
+  );
+
+  assertEquals(response.status, 415);
   assertObjectMatch(await response.json(), {
     error: "unsupported media type",
   });

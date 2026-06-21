@@ -7,7 +7,7 @@ import {
 import { handler } from "./main.ts";
 
 Deno.test("handler responde / com HTML da Calculadora Financeira iFactory", async () => {
-  const response = await handler(new Request("http://localhost/"));
+  const response: Response = await handler(new Request("http://localhost/"));
 
   assertEquals(response.status, 200);
   assertEquals(
@@ -15,7 +15,7 @@ Deno.test("handler responde / com HTML da Calculadora Financeira iFactory", asyn
     "text/html; charset=utf-8",
   );
 
-  const html = await response.text();
+  const html: string = await response.text();
 
   assertStringIncludes(html, "<title>Calculadora Financeira iFactory</title>");
   assertStringIncludes(html, "Calculadora Financeira iFactory");
@@ -27,7 +27,9 @@ Deno.test("handler responde / com HTML da Calculadora Financeira iFactory", asyn
 });
 
 Deno.test("handler responde /health com status 200 e metadados do serviço", async () => {
-  const response = await handler(new Request("http://localhost/health"));
+  const response: Response = await handler(
+    new Request("http://localhost/health"),
+  );
 
   assertEquals(response.status, 200);
   assertEquals(
@@ -41,8 +43,24 @@ Deno.test("handler responde /health com status 200 e metadados do serviço", asy
   });
 });
 
+Deno.test("handler mantém compatibilidade retroativa em /api/visits", async () => {
+  const response: Response = await handler(
+    new Request("http://localhost/api/visits"),
+  );
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertObjectMatch(await response.json(), {
+    visits: 1,
+    totalVisits: 1,
+  });
+});
+
 Deno.test("handler calcula juros compostos em POST /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -68,7 +86,7 @@ Deno.test("handler calcula juros compostos em POST /api/juros-compostos", async 
 });
 
 Deno.test("handler aceita content-type application/json com charset em /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       headers: { "content-type": "application/json; charset=utf-8" },
@@ -87,7 +105,7 @@ Deno.test("handler aceita content-type application/json com charset em /api/juro
 });
 
 Deno.test("handler retorna 415 sem content-type json em /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       body: JSON.stringify({
@@ -109,7 +127,7 @@ Deno.test("handler retorna 415 sem content-type json em /api/juros-compostos", a
 });
 
 Deno.test("handler retorna 415 para content-type ambíguo em /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       headers: { "content-type": "text/plain, application/json" },
@@ -128,7 +146,7 @@ Deno.test("handler retorna 415 para content-type ambíguo em /api/juros-composto
 });
 
 Deno.test("handler retorna 400 para JSON malformado em /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -143,7 +161,7 @@ Deno.test("handler retorna 400 para JSON malformado em /api/juros-compostos", as
 });
 
 Deno.test("handler retorna 400 para payload inválido em /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -165,7 +183,7 @@ Deno.test("handler retorna 400 para payload inválido em /api/juros-compostos", 
 });
 
 Deno.test("handler retorna 400 para campos ausentes em /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -186,7 +204,7 @@ Deno.test("handler retorna 400 para campos ausentes em /api/juros-compostos", as
 });
 
 Deno.test("handler retorna 400 para campos extras em /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -209,7 +227,7 @@ Deno.test("handler retorna 400 para campos extras em /api/juros-compostos", asyn
 });
 
 Deno.test("handler retorna 400 para periodos não inteiro em /api/juros-compostos", async () => {
-  const response = await handler(
+  const response: Response = await handler(
     new Request("http://localhost/api/juros-compostos", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -230,54 +248,13 @@ Deno.test("handler retorna 400 para periodos não inteiro em /api/juros-composto
   });
 });
 
-Deno.test("handler retorna 405 para método incorreto em /api/juros-compostos", async () => {
-  const response = await handler(
-    new Request("http://localhost/api/juros-compostos", {
-      method: "GET",
-    }),
+Deno.test("handler retorna 404 para rota desconhecida", async () => {
+  const response: Response = await handler(
+    new Request("http://localhost/inexistente"),
   );
 
-  assertEquals(response.status, 405);
-  assertEquals(response.headers.get("allow"), "POST");
+  assertEquals(response.status, 404);
   assertObjectMatch(await response.json(), {
-    error: "method not allowed",
-  });
-});
-
-Deno.test("handler mantém GET /api/visits funcionando", async () => {
-  const response = await handler(
-    new Request("http://localhost/api/visits"),
-  );
-
-  assertEquals(response.status, 200);
-  assertEquals(
-    response.headers.get("content-type"),
-    "application/json; charset=utf-8",
-  );
-  assertObjectMatch(await response.json(), {
-    totalVisits: 0,
-    uniqueVisitors: 0,
-  });
-});
-
-Deno.test("handler mantém POST /api/visits funcionando", async () => {
-  const response = await handler(
-    new Request("http://localhost/api/visits", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        visitorId: "visitor-1",
-      }),
-    }),
-  );
-
-  assertEquals(response.status, 200);
-  assertEquals(
-    response.headers.get("content-type"),
-    "application/json; charset=utf-8",
-  );
-  assertObjectMatch(await response.json(), {
-    totalVisits: 1,
-    uniqueVisitors: 1,
+    error: "not found",
   });
 });

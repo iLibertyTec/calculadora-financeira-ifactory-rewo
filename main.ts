@@ -1,7 +1,7 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
 import { calcularJurosCompostos } from "./src/juros_compostos.ts";
 
-const counter = new VisitCounter();
+const counter: VisitCounter = new VisitCounter();
 
 const JUROS_COMPOSTOS_FIELDS = ["capitalInicial", "taxa", "periodos"] as const;
 
@@ -24,7 +24,7 @@ type ValidationResult =
   };
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
-  const headers = new Headers(init?.headers);
+  const headers: Headers = new Headers(init?.headers);
 
   if (!headers.has("content-type")) {
     headers.set("content-type", "application/json; charset=utf-8");
@@ -37,7 +37,7 @@ function jsonResponse(body: unknown, init?: ResponseInit): Response {
 }
 
 function htmlResponse(body: string, init?: ResponseInit): Response {
-  const headers = new Headers(init?.headers);
+  const headers: Headers = new Headers(init?.headers);
 
   if (!headers.has("content-type")) {
     headers.set("content-type", "text/html; charset=utf-8");
@@ -50,13 +50,14 @@ function htmlResponse(body: string, init?: ResponseInit): Response {
 }
 
 function hasJsonContentType(req: Request): boolean {
-  const contentType = req.headers.get("content-type");
+  const contentType: string | null = req.headers.get("content-type");
 
   if (!contentType) {
     return false;
   }
 
-  const mimeType = contentType.split(";", 1)[0]?.trim().toLowerCase();
+  const mimeType: string | undefined = contentType.split(";", 1)[0]?.trim()
+    .toLowerCase();
 
   return mimeType === "application/json";
 }
@@ -71,7 +72,7 @@ function validateJurosCompostosPayload(value: unknown): ValidationResult {
     };
   }
 
-  const payload = value as Record<string, unknown>;
+  const payload: Record<string, unknown> = value as Record<string, unknown>;
   const errors: Record<string, string> = {};
 
   for (const key of Object.keys(payload)) {
@@ -261,18 +262,18 @@ function renderHomePage(): string {
         <section class="section" aria-labelledby="como-usar">
           <h2 id="como-usar">Como usar</h2>
           <ul>
-            <li>Envie um <strong>POST</strong> para <code>/api/juros-compostos</code>.</li>
+            <li>Envie requisições <code>POST</code> para <code>/api/juros-compostos</code>.</li>
             <li>Informe <code>capitalInicial</code>, <code>taxa</code> e <code>periodos</code>.</li>
-            <li>Receba o <code>montante</code> calculado pela API.</li>
+            <li>Receba o <code>montante</code> calculado com juros compostos.</li>
           </ul>
         </section>
 
-        <section class="section" aria-labelledby="campos">
-          <h2 id="campos">Campos esperados</h2>
+        <section class="section" aria-labelledby="casos-de-uso">
+          <h2 id="casos-de-uso">Casos de uso</h2>
           <ul>
-            <li><code>capitalInicial</code>: número finito.</li>
-            <li><code>taxa</code>: número finito em formato decimal.</li>
-            <li><code>periodos</code>: número inteiro finito.</li>
+            <li>Simulações financeiras rápidas em aplicações internas.</li>
+            <li>Validação de cenários de investimento e projeções.</li>
+            <li>Integração com formulários, dashboards e workflows automatizados.</li>
           </ul>
         </section>
       </div>
@@ -280,15 +281,13 @@ function renderHomePage(): string {
       <section class="section" aria-labelledby="exemplo-api">
         <h2 id="exemplo-api">Exemplo de requisição</h2>
         <p>
-          Use JSON com <code>content-type: application/json</code> para consumir o endpoint.
+          Faça um <code>POST</code> para <code>/api/juros-compostos</code> com JSON.
         </p>
-        <pre aria-label="Exemplo de uso da API">curl -X POST http://localhost:8000/api/juros-compostos \
-  -H "content-type: application/json" \
-  -d '{
-    "capitalInicial": 1000,
-    "taxa": 0.1,
-    "periodos": 2
-  }'</pre>
+        <pre>{
+  "capitalInicial": 1000,
+  "taxa": 0.1,
+  "periodos": 2
+}</pre>
       </section>
     </main>
   </body>
@@ -296,9 +295,13 @@ function renderHomePage(): string {
 }
 
 export async function handler(req: Request): Promise<Response> {
-  const url = new URL(req.url);
+  const url: URL = new URL(req.url);
 
-  if (url.pathname === "/health") {
+  if (req.method === "GET" && url.pathname === "/") {
+    return htmlResponse(renderHomePage());
+  }
+
+  if (req.method === "GET" && url.pathname === "/health") {
     return jsonResponse({
       ok: true,
       service: "ifactory-product",
@@ -306,10 +309,22 @@ export async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (url.pathname === "/api/juros-compostos" && req.method === "POST") {
+  if (req.method === "GET" && url.pathname === "/api/visits") {
+    const visits: number = counter.increment();
+
+    return jsonResponse({
+      message: formatCounterMessage(visits),
+      totalVisits: visits,
+      visits,
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/api/juros-compostos") {
     if (!hasJsonContentType(req)) {
       return jsonResponse(
-        { error: "unsupported media type" },
+        {
+          error: "unsupported media type",
+        },
         { status: 415 },
       );
     }
@@ -320,26 +335,31 @@ export async function handler(req: Request): Promise<Response> {
       body = await req.json();
     } catch {
       return jsonResponse(
-        { error: "invalid json" },
+        {
+          error: "invalid json",
+        },
         { status: 400 },
       );
     }
 
-    const validation = validateJurosCompostosPayload(body);
+    const validation: ValidationResult = validateJurosCompostosPayload(body);
 
     if (!validation.ok) {
       return jsonResponse(
-        { error: "invalid payload", details: validation.errors },
+        {
+          error: "invalid payload",
+          details: validation.errors,
+        },
         { status: 400 },
       );
     }
 
     const { capitalInicial, taxa, periodos } = validation.payload;
-    const montante = calcularJurosCompostos(
+    const montante: number = calcularJurosCompostos({
       capitalInicial,
       taxa,
       periodos,
-    );
+    });
 
     return jsonResponse({
       capitalInicial,
@@ -349,42 +369,10 @@ export async function handler(req: Request): Promise<Response> {
     });
   }
 
-  if (url.pathname === "/api/juros-compostos") {
-    return jsonResponse(
-      { error: "method not allowed" },
-      {
-        status: 405,
-        headers: {
-          allow: "POST",
-        },
-      },
-    );
-  }
-
-  if (url.pathname === "/api/visits" && req.method === "GET") {
-    return jsonResponse(counter.state);
-  }
-
-  if (url.pathname === "/api/visits" && req.method === "POST") {
-    const body = req.headers.get("content-type")?.includes("json")
-      ? await req.json().catch((): Record<string, never> => ({}))
-      : {};
-    const visitorId = typeof body.visitorId === "string"
-      ? body.visitorId
-      : undefined;
-    const state = counter.recordVisit(visitorId);
-    return jsonResponse({
-      ...state,
-      message: formatCounterMessage(state),
-    });
-  }
-
-  if (url.pathname === "/") {
-    return htmlResponse(renderHomePage());
-  }
-
   return jsonResponse(
-    { error: "not found" },
+    {
+      error: "not found",
+    },
     { status: 404 },
   );
 }

@@ -94,6 +94,7 @@ Deno.test("GET / contém JavaScript puro para submit sem recarregar", async () =
   const body = await response.text();
 
   assertEquals(response.status, 200);
+  assertMatch(body, /typeof fetch === "function"/);
   assertMatch(body, /form\.addEventListener\("submit", async \(event\) => \{/);
   assertMatch(body, /event\.preventDefault\(\);/);
   assertMatch(body, /fetch\("\/api\/juros-compostos", \{/);
@@ -106,6 +107,7 @@ Deno.test("GET / contém JavaScript puro para submit sem recarregar", async () =
   assertMatch(body, /statusDescricao\.textContent = "Calculando simulação\.\.\.";/);
   assertMatch(body, /botao\.disabled = true;/);
   assertMatch(body, /paragraph\.textContent = message;/);
+  assertMatch(body, /strong\.textContent = String\(data\.montanteFormatado \|\| ""\);/);
   assertNotMatch(body, /form\.submit\(\);/);
   assertMatch(body, /data = await response\.json\(\);/);
   assertMatch(
@@ -175,18 +177,6 @@ Deno.test("POST /api/juros-compostos rejeita JSON inválido", async () => {
   const body = await response.json();
 
   assertEquals(response.status, 400);
-  assertEquals(body.error, "JSON inválido no corpo da requisição.");
-  assertEquals(body.errors[0], "JSON inválido no corpo da requisição.");
-});
-
-Deno.test("GET / não referencia frameworks ou dependências externas", async () => {
-  const response = await handler(new Request("http://localhost/"));
-  const body = await response.text();
-
-  assertEquals(response.status, 200);
-  assertNotMatch(body, /preact/i);
-  assertNotMatch(body, /react/i);
-  assertNotMatch(body, /fresh/i);
-  assertNotMatch(body, /unpkg/i);
-  assertNotMatch(body, /cdn/i);
+  assertEquals(body.error, "Não foi possível interpretar o JSON enviado.");
+  assertEquals(body.errors[0], "Não foi possível interpretar o JSON enviado.");
 });

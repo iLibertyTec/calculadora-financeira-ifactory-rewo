@@ -1,6 +1,29 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
+import { calcularJurosCompostos } from "./src/juros_compostos.ts";
 
 const counter = new VisitCounter();
+
+type JurosCompostosPayload = {
+  capitalInicial: number;
+  taxa: number;
+  periodos: number;
+};
+
+function isJurosCompostosPayload(
+  value: unknown,
+): value is JurosCompostosPayload {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const payload = value as Record<string, unknown>;
+
+  return typeof payload.capitalInicial === "number" &&
+    Number.isFinite(payload.capitalInicial) &&
+    typeof payload.taxa === "number" && Number.isFinite(payload.taxa) &&
+    typeof payload.periodos === "number" &&
+    Number.isFinite(payload.periodos);
+}
 
 export async function handler(req: Request): Promise<Response> {
   const url = new URL(req.url);
@@ -10,6 +33,43 @@ export async function handler(req: Request): Promise<Response> {
       ok: true,
       service: "ifactory-product",
       version: "0.1.0",
+    });
+  }
+
+  if (url.pathname === "/api/juros-compostos") {
+    if (req.method !== "POST") {
+      return Response.json(
+        { error: "method not allowed" },
+        {
+          status: 405,
+          headers: { "allow": "POST" },
+        },
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json({ error: "invalid json" }, { status: 400 });
+    }
+
+    if (!isJurosCompostosPayload(body)) {
+      return Response.json({ error: "invalid payload" }, { status: 400 });
+    }
+
+    const montante = calcularJurosCompostos(
+      body.capitalInicial,
+      body.taxa,
+      body.periodos,
+    );
+
+    return Response.json({
+      capitalInicial: body.capitalInicial,
+      taxa: body.taxa,
+      periodos: body.periodos,
+      montante,
     });
   }
 

@@ -18,7 +18,32 @@ Deno.test("retorna erro quando content-type não indica JSON", async () => {
   });
 });
 
-Deno.test("aceita variantes de content-type JSON", async () => {
+Deno.test("aceita application/json", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 12,
+    }),
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertObjectMatch(result, {
+    success: true,
+    data: {
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 12,
+    },
+  });
+});
+
+Deno.test("aceita variantes +json de content-type", async () => {
   const req = new Request("http://localhost/api/juros-compostos", {
     method: "POST",
     headers: {
@@ -43,20 +68,24 @@ Deno.test("aceita variantes de content-type JSON", async () => {
   });
 });
 
-Deno.test("retorna erro quando corpo JSON está vazio", async () => {
+Deno.test("rejeita content-type com substring json fora do media type esperado", async () => {
   const req = new Request("http://localhost/api/juros-compostos", {
     method: "POST",
     headers: {
-      "content-type": "application/json",
+      "content-type": "text/json-like",
     },
-    body: "   ",
+    body: JSON.stringify({
+      principal: 1000,
+      taxaMensal: 1.5,
+      meses: 12,
+    }),
   });
 
   const result = await readJurosCompostosRequest(req);
 
   assertEquals(result, {
     success: false,
-    error: "O corpo da requisição não pode estar vazio.",
+    error: "O corpo da requisição deve estar em JSON.",
   });
 });
 
@@ -67,6 +96,23 @@ Deno.test("retorna erro quando JSON é inválido", async () => {
       "content-type": "application/json",
     },
     body: "{",
+  });
+
+  const result = await readJurosCompostosRequest(req);
+
+  assertEquals(result, {
+    success: false,
+    error: "O JSON da requisição é inválido.",
+  });
+});
+
+Deno.test("retorna erro quando corpo JSON está vazio", async () => {
+  const req = new Request("http://localhost/api/juros-compostos", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: "",
   });
 
   const result = await readJurosCompostosRequest(req);
@@ -304,7 +350,7 @@ Deno.test("retorna erro quando meses não é numérico", async () => {
   });
 });
 
-Deno.test("retorna erro quando meses é fracionário", async () => {
+Deno.test("retorna erro quando meses não é inteiro", async () => {
   const req = new Request("http://localhost/api/juros-compostos", {
     method: "POST",
     headers: {
@@ -346,7 +392,7 @@ Deno.test("retorna erro quando meses é zero", async () => {
   });
 });
 
-Deno.test("retorna sucesso com valores numéricos preservados", async () => {
+Deno.test("retorna sucesso quando entrada é válida", async () => {
   const req = new Request("http://localhost/api/juros-compostos", {
     method: "POST",
     headers: {
@@ -354,7 +400,7 @@ Deno.test("retorna sucesso com valores numéricos preservados", async () => {
     },
     body: JSON.stringify({
       principal: 2500.75,
-      taxaMensal: 0,
+      taxaMensal: 2.25,
       meses: 18,
     }),
   });
@@ -365,7 +411,7 @@ Deno.test("retorna sucesso com valores numéricos preservados", async () => {
     success: true,
     data: {
       principal: 2500.75,
-      taxaMensal: 0,
+      taxaMensal: 2.25,
       meses: 18,
     },
   });

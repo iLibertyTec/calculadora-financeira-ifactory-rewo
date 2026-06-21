@@ -18,31 +18,30 @@ const JUROS_COMPOSTOS_FIELDS: readonly string[] = [
   "meses",
 ];
 
+function isJsonContentType(contentType: string | null): boolean {
+  if (contentType === null) {
+    return false;
+  }
+
+  const mediaType: string = contentType.split(";", 1)[0].trim().toLowerCase();
+
+  return mediaType === "application/json" || mediaType.endsWith("+json");
+}
+
 export async function readJurosCompostosRequest(
   req: Request,
 ): Promise<JurosCompostosRequestResult> {
-  const contentType: string | null = req.headers.get("content-type");
-
-  if (!contentType?.toLowerCase().includes("json")) {
+  if (!isJsonContentType(req.headers.get("content-type"))) {
     return {
       success: false,
       error: "O corpo da requisição deve estar em JSON.",
     };
   }
 
-  const rawBody: string = await req.text();
-
-  if (rawBody.trim() === "") {
-    return {
-      success: false,
-      error: "O corpo da requisição não pode estar vazio.",
-    };
-  }
-
   let body: unknown;
 
   try {
-    body = JSON.parse(rawBody) as unknown;
+    body = await req.json();
   } catch {
     return {
       success: false,
@@ -69,21 +68,21 @@ export async function readJurosCompostosRequest(
     };
   }
 
-  if (!("principal" in payload)) {
+  if (!Object.hasOwn(payload, "principal")) {
     return {
       success: false,
       error: "O campo principal é obrigatório.",
     };
   }
 
-  if (!("taxaMensal" in payload)) {
+  if (!Object.hasOwn(payload, "taxaMensal")) {
     return {
       success: false,
       error: "O campo taxaMensal é obrigatório.",
     };
   }
 
-  if (!("meses" in payload)) {
+  if (!Object.hasOwn(payload, "meses")) {
     return {
       success: false,
       error: "O campo meses é obrigatório.",
@@ -108,7 +107,8 @@ export async function readJurosCompostosRequest(
   ) {
     return {
       success: false,
-      error: "O campo taxaMensal deve ser um número finito maior ou igual a zero.",
+      error:
+        "O campo taxaMensal deve ser um número finito maior ou igual a zero.",
     };
   }
 

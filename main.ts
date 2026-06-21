@@ -122,6 +122,10 @@ function renderHomePage(): string {
         display: block;
         min-height: 24px;
       }
+
+      [hidden] {
+        display: none;
+      }
     </style>
   </head>
   <body>
@@ -133,7 +137,7 @@ function renderHomePage(): string {
           valor principal, taxa mensal e prazo em meses.
         </p>
 
-        <form method="get" action="/" novalidate>
+        <form method="get" action="/">
           <fieldset>
             <legend>Dados da simulação</legend>
 
@@ -142,8 +146,10 @@ function renderHomePage(): string {
               <input
                 id="principal"
                 name="principal"
-                type="text"
+                type="number"
                 inputmode="decimal"
+                min="0"
+                step="0.01"
                 required
                 aria-required="true"
                 aria-describedby="principal-ajuda"
@@ -159,8 +165,10 @@ function renderHomePage(): string {
               <input
                 id="taxaMensal"
                 name="taxaMensal"
-                type="text"
+                type="number"
                 inputmode="decimal"
+                min="0"
+                step="0.01"
                 required
                 aria-required="true"
                 aria-describedby="taxaMensal-ajuda"
@@ -196,9 +204,7 @@ function renderHomePage(): string {
 
         <div class="status">
           <output id="resultado" aria-live="polite"></output>
-          <div id="erro" aria-live="polite" role="alert">
-            Preencha os campos obrigatórios para realizar a simulação.
-          </div>
+          <div id="erro" aria-live="polite" role="alert" hidden></div>
         </div>
       </section>
     </main>
@@ -242,10 +248,4 @@ export async function handler(req: Request): Promise<Response> {
   }
 
   return Response.json({ error: "not found" }, { status: 404 });
-}
-
-if (import.meta.main) {
-  const port = Number(Deno.env.get("PORT") ?? 8000);
-  console.log(`iFactory Product on http://localhost:${port}`);
-  Deno.serve({ port }, handler);
 }

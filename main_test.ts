@@ -1,4 +1,4 @@
-import { assertEquals, assertMatch } from "@std/assert";
+import { assertEquals, assertMatch, assertNotMatch } from "@std/assert";
 import { handler } from "./main.ts";
 
 Deno.test("GET / retorna HTML da calculadora financeira", async () => {
@@ -15,12 +15,16 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /<legend>Dados da simulação<\/legend>/);
   assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
   assertMatch(body, /name="principal"/);
-  assertMatch(body, /type="text"/);
+  assertMatch(body, /id="principal"/);
+  assertMatch(body, /type="number"/);
+  assertMatch(body, /inputmode="decimal"/);
+  assertMatch(body, /step="0\.01"/);
   assertMatch(body, /placeholder="Ex\.: 1000,00"/);
   assertMatch(body, /required/);
   assertMatch(body, /aria-describedby="principal-ajuda"/);
   assertMatch(body, /<label for="taxaMensal">Taxa mensal \(%\) \*<\/label>/);
   assertMatch(body, /name="taxaMensal"/);
+  assertMatch(body, /id="taxaMensal"/);
   assertMatch(body, /placeholder="Ex\.: 1,50"/);
   assertMatch(body, /aria-describedby="taxaMensal-ajuda"/);
   assertMatch(body, /<label for="meses">Meses \*<\/label>/);
@@ -30,9 +34,10 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /<output id="resultado" aria-live="polite"><\/output>/);
   assertMatch(
     body,
-    /<div id="erro" aria-live="polite" role="alert">[\s\S]*Preencha os campos obrigatórios para realizar a simulação\.[\s\S]*<\/div>/,
+    /<div id="erro" aria-live="polite" role="alert" hidden><\/div>/,
   );
-  assertMatch(body, /<form method="get" action="\/" novalidate>/);
+  assertMatch(body, /<form method="get" action="\/">/);
+  assertNotMatch(body, /novalidate/);
 });
 
 Deno.test("GET / não referencia frameworks ou dependências externas", async () => {

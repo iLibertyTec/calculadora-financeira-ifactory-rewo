@@ -1,4 +1,5 @@
 import { formatCounterMessage, VisitCounter } from "./counter.ts";
+import { calcularJurosCompostos } from "./src/juros_compostos.ts";
 
 const counter = new VisitCounter();
 
@@ -29,6 +30,54 @@ export async function handler(req: Request): Promise<Response> {
       ...state,
       message: formatCounterMessage(state),
     });
+  }
+
+  if (url.pathname === "/api/juros-compostos") {
+    if (req.method !== "POST") {
+      return Response.json(
+        { error: "Método não permitido." },
+        {
+          status: 405,
+          headers: { "allow": "POST" },
+        },
+      );
+    }
+
+    let body: unknown;
+
+    try {
+      body = await req.json();
+    } catch {
+      return Response.json(
+        { error: "JSON inválido." },
+        { status: 400 },
+      );
+    }
+
+    try {
+      if (typeof body !== "object" || body === null) {
+        throw new TypeError("Corpo da requisição deve ser um objeto JSON.");
+      }
+
+      const payload = body as {
+        principal?: unknown;
+        taxaMensal?: unknown;
+        meses?: unknown;
+      };
+
+      const resultado = calcularJurosCompostos(
+        payload.principal as number,
+        payload.taxaMensal as number,
+        payload.meses as number,
+      );
+
+      return Response.json(resultado);
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : "Dados inválidos.";
+      return Response.json({ error: message }, { status: 400 });
+    }
   }
 
   if (url.pathname === "/") {

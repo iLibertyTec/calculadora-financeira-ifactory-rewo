@@ -3,8 +3,18 @@ export interface JurosCompostosResultado {
   jurosTotais: number;
 }
 
+/**
+ * Calcula juros compostos usando taxa mensal em percentual.
+ *
+ * Exemplo: taxaMensalPercentual = 2 representa 2% ao mês.
+ *
+ * Fórmula:
+ * montante = principal * (1 + taxaMensalPercentual / 100) ^ meses
+ */
 function validarNumeroFinito(valor: unknown, nomeCampo: string): number {
-  if (typeof valor !== "number" || Number.isNaN(valor) || !Number.isFinite(valor)) {
+  if (
+    typeof valor !== "number" || Number.isNaN(valor) || !Number.isFinite(valor)
+  ) {
     throw new TypeError(`${nomeCampo} deve ser um número finito.`);
   }
 
@@ -39,7 +49,8 @@ export function calcularJurosCompostos(
     throw new RangeError("meses deve ser um número inteiro.");
   }
 
-  const montante = principalValidado * Math.pow(1 + taxaValidada / 100, mesesValidado);
+  const montante = principalValidado *
+    Math.pow(1 + taxaValidada / 100, mesesValidado);
   const jurosTotais = montante - principalValidado;
 
   return {

@@ -1,4 +1,5 @@
 import {
+  assertAlmostEquals,
   assertEquals,
   assertThrows,
 } from "@std/assert";
@@ -7,13 +8,20 @@ import { calcularJurosCompostos } from "./juros_compostos.ts";
 Deno.test("calcula montante com juros compostos", () => {
   const resultado = calcularJurosCompostos(1000, 2, 3);
 
-  assertEquals(resultado.montante, 1061.208);
+  assertAlmostEquals(resultado.montante, 1061.208, 1e-12);
 });
 
 Deno.test("calcula juros totais com juros compostos", () => {
   const resultado = calcularJurosCompostos(1000, 2, 3);
 
-  assertEquals(resultado.jurosTotais, 61.20799999999997);
+  assertAlmostEquals(resultado.jurosTotais, 61.208, 1e-12);
+});
+
+Deno.test("aceita taxa mensal percentual decimal", () => {
+  const resultado = calcularJurosCompostos(1500, 1.5, 6);
+
+  assertAlmostEquals(resultado.montante, 1640.6826226566407, 1e-12);
+  assertAlmostEquals(resultado.jurosTotais, 140.68262265664072, 1e-12);
 });
 
 Deno.test("retorna zero de juros quando meses e taxa sao zero", () => {
@@ -21,6 +29,15 @@ Deno.test("retorna zero de juros quando meses e taxa sao zero", () => {
 
   assertEquals(resultado, {
     montante: 1000,
+    jurosTotais: 0,
+  });
+});
+
+Deno.test("aceita principal zero com taxa e meses positivos", () => {
+  const resultado = calcularJurosCompostos(0, 1.5, 12);
+
+  assertEquals(resultado, {
+    montante: 0,
     jurosTotais: 0,
   });
 });

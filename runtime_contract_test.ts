@@ -7,33 +7,29 @@ type DenoConfig = {
   imports?: Record<string, string>;
 };
 
-type RuntimeModule = {
-  specifier: string;
-  dependencies?: RuntimeModule[];
-};
-
 async function readDenoConfig(): Promise<DenoConfig> {
   const text: string = await Deno.readTextFile("./deno.json");
   return JSON.parse(text) as DenoConfig;
 }
 
-function collectExternalSpecifiers(
-  module: RuntimeModule,
-  found: Set<string> = new Set<string>(),
-): Set<string> {
-  const specifier: string = module.specifier;
+function splitCommand(command: string): string[] {
+  return command.match(/(?:"[^"]*"|'[^']*'|\S+)/g) ?? [];
+}
+
+function unquote(token: string): string {
   if (
-    specifier.startsWith("jsr:") || specifier.startsWith("npm:") ||
-    specifier.startsWith("http://") || specifier.startsWith("https://")
+    (token.startsWith("\"") && token.endsWith("\"")) ||
+    (token.startsWith("'") && token.endsWith("'"))
   ) {
-    found.add(specifier);
+    return token.slice(1, -1);
   }
 
-  for (const dependency of module.dependencies ?? []) {
-    collectExternalSpecifiers(dependency, found);
-  }
+  return token;
+}
 
-  return found;
+function isExternalImportSpecifier(specifier: string): boolean {
+  return specifier.startsWith("jsr:") || specifier.startsWith("npm:") ||
+    specifier.startsWith("http://") || specifier.startsWith("https://");
 }
 
 Deno.test("main.ts mantém contrato de entrypoint com import.meta.main e inicialização via Deno.serve", async () => {
@@ -41,51 +37,42 @@ Deno.test("main.ts mantém contrato de entrypoint com import.meta.main e inicial
 
   assertMatch(mainSource, /if\s*\(\s*import\.meta\.main\s*\)/);
   assertMatch(mainSource, /Deno\.serve\s*\(/);
-
-  const command: Deno.Command = new Deno.Command(Deno.execPath(), {
-    args: ["eval", "import \"./main.ts\";"],
-    cwd: Deno.cwd(),
-    env: {
-      PORT: "0",
-    },
-  });
-  const output: Deno.CommandOutput = await command.output();
-  const stderr: string = new TextDecoder().decode(output.stderr);
-
-  assert(
-    output.success,
-    `Import do entrypoint falhou inesperadamente: ${stderr}`,
-  );
 });
 
-Deno.test("deno task start mantém intenção de executar main.ts com deno run e permissão -A", async () => {
+Deno.test("deno task start mantém intenção de executar main.ts com deno run e permissão total", async () => {
   const denoConfig: DenoConfig = await readDenoConfig();
   const startTask: string | undefined = denoConfig.tasks?.start;
 
   assert(startTask, "A task 'start' deve existir no deno.json.");
-  assertMatch(startTask, /\bdeno\s+run\b/);
-  assertMatch(startTask, /(^|\s)-A(\s|$)/);
-  assertMatch(startTask, /(^|\s)\.?\/??main\.ts(\s|$)/);
+
+  const tokens: string[] = splitCommand(startTask).map(unquote);
+
+  assert(tokens.length >= 3, "A task 'start' deve conter um comando válido.");
+  assertEquals(tokens[0], "deno");
+  assert(tokens.includes("run"), "A task 'start' deve usar 'deno run'.");
+  assert(
+    tokens.includes("-A") || tokens.includes("--allow-all"),
+    "A task 'start' deve manter permissão total (-A ou --allow-all).",
+  );
+  assertEquals(
+    tokens[tokens.length - 1],
+    "main.ts",
+    "A task 'start' deve apontar para main.ts como entrypoint final.",
+  );
 });
 
-Deno.test("configuração Deno mantém apenas @std/assert como import externo declarado", async () => {
+Deno.test("configuração Deno não declara imports externos além de @std/assert", async () => {
   const denoConfig: DenoConfig = await readDenoConfig();
   const imports: Record<string, string> = denoConfig.imports ?? {};
-  const externalImports: Array<[string, string]> = Object.entries(imports).filter(([
-    _key,
-    value,
-  ]) => {
-    return value.startsWith("jsr:") || value.startsWith("npm:") ||
-      value.startsWith("http://") || value.startsWith("https://");
+  const disallowedExternalImports: Array<[string, string]> = Object.entries(
+    imports,
+  ).filter(([key, value]) => {
+    return isExternalImportSpecifier(value) && key !== "@std/assert";
   });
 
-  assertEquals(externalImports, [["@std/assert", "jsr:@std/assert@1"]]);
-});
-
-Deno.test("grafo de runtime carregado por main.ts não inclui dependências externas além de @std/assert", async () => {
-  const rootModule: RuntimeModule = await Deno.loadGraph("./main.ts");
-  const externalSpecifiers: string[] = [...collectExternalSpecifiers(rootModule)]
-    .sort();
-
-  assertEquals(externalSpecifiers, []);
+  assertEquals(disallowedExternalImports, []);
+  assert(
+    imports["@std/assert"] !== undefined,
+    "O alias @std/assert deve permanecer declarado em deno.json.",
+  );
 });

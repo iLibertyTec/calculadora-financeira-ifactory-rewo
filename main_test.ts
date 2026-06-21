@@ -14,6 +14,8 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /<title>Calculadora Financeira iFactory<\/title>/);
   assertMatch(body, /<style>/);
   assertMatch(body, /\.card/);
+  assertMatch(body, /grid-template-columns: repeat\(auto-fit, minmax\(180px, 1fr\)\);/);
+  assertMatch(body, /@media \(max-width: 900px\)/);
   assertMatch(body, /@media \(max-width: 720px\)/);
   assertMatch(body, /<legend>Dados da simulação<\/legend>/);
   assertMatch(body, /<label for="principal">Valor principal \*<\/label>/);
@@ -100,4 +102,29 @@ Deno.test("GET / não referencia frameworks ou dependências externas", async ()
   assertMatch(body, /^((?!fresh).)*$/is);
   assertMatch(body, /^((?!islands).)*$/is);
   assertMatch(body, /^((?!https?:\/\/).)*$/is);
+});
+
+Deno.test("GET /health permanece disponível", async () => {
+  const response = await handler(new Request("http://localhost/health"));
+  const body = await response.text();
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertEquals(body, '{"ok":true}');
+});
+
+Deno.test("GET /api/visits permanece disponível", async () => {
+  const response = await handler(new Request("http://localhost/api/visits"));
+  const body = await response.text();
+
+  assertEquals(response.status, 200);
+  assertEquals(
+    response.headers.get("content-type"),
+    "application/json; charset=utf-8",
+  );
+  assertMatch(body, /"visits":\d+/);
+  assertMatch(body, /"message":"/);
 });

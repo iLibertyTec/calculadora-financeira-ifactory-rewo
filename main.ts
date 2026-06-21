@@ -124,14 +124,15 @@ function renderHomePage(url: URL): string {
         --bg-accent: #e8eefc;
         --panel: #ffffff;
         --ink: #162033;
-        --muted: #5b657a;
+        --muted: #4b5565;
         --border: #d8deea;
         --accent: #1d4ed8;
-        --accent-strong: #1e40af;
+        --accent-strong: #173ea6;
         --accent-soft: #dbeafe;
+        --success-ink: #14532d;
         --success-bg: #ecfdf3;
         --success-border: #86efac;
-        --danger: #b91c1c;
+        --danger: #991b1b;
         --danger-bg: #fef2f2;
         --danger-border: #fecaca;
         --shadow: 0 18px 50px rgba(22, 32, 51, 0.12);
@@ -220,7 +221,7 @@ function renderHomePage(url: URL): string {
       .grid {
         display: grid;
         gap: 16px;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       }
 
       .field {
@@ -239,109 +240,95 @@ function renderHomePage(url: URL): string {
         padding: 12px 14px;
         border: 1px solid var(--border);
         border-radius: 12px;
-        background: #ffffff;
-        color: var(--ink);
         font: inherit;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        color: var(--ink);
+        background: #ffffff;
       }
 
       input::placeholder {
-        color: #8a94a6;
+        color: #6b7280;
       }
 
       input:focus {
-        outline: none;
+        outline: 3px solid rgba(29, 78, 216, 0.18);
+        outline-offset: 1px;
         border-color: var(--accent);
-        box-shadow: 0 0 0 4px rgba(29, 78, 216, 0.14);
+      }
+
+      small {
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
       }
 
       button {
-        min-height: 50px;
-        padding: 14px 18px;
+        appearance: none;
         border: 0;
         border-radius: 12px;
-        background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+        background: var(--accent-strong);
         color: #ffffff;
         font: inherit;
         font-weight: 700;
+        padding: 14px 20px;
+        min-height: 48px;
         cursor: pointer;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-        box-shadow: 0 12px 24px rgba(29, 78, 216, 0.22);
       }
 
-      button:hover {
-        transform: translateY(-1px);
-      }
-
+      button:hover,
       button:focus-visible {
-        outline: 3px solid rgba(29, 78, 216, 0.2);
-        outline-offset: 2px;
-      }
-
-      button:active {
-        transform: translateY(0);
-      }
-
-      .hint {
-        margin: 0;
-        font-size: 0.92rem;
-        color: var(--muted);
+        background: var(--accent);
       }
 
       .status {
-        margin-top: 8px;
-        padding-top: 24px;
-        border-top: 1px solid var(--border);
-        display: grid;
-        gap: 14px;
-      }
-
-      .status h2 {
         margin: 0;
-        font-size: 1.1rem;
+        font-size: 0.95rem;
+        color: var(--muted);
       }
 
-      #status-descricao {
-        margin: 0;
-      }
-
-      output,
-      [role="alert"] {
-        display: block;
-        min-height: 24px;
+      .panel {
+        margin-top: 4px;
         padding: 16px;
         border-radius: 14px;
-        line-height: 1.6;
+        border: 1px solid var(--border);
+        background: #f8fafc;
       }
 
       #resultado {
+        display: block;
+        color: var(--success-ink);
         background: var(--success-bg);
-        border: 1px solid var(--success-border);
-        color: #166534;
+        border-color: var(--success-border);
       }
 
       #erro {
-        background: var(--danger-bg);
-        border: 1px solid var(--danger-border);
         color: var(--danger);
+        background: var(--danger-bg);
+        border-color: var(--danger-border);
       }
 
-      #erro p,
-      #resultado p {
-        margin: 0;
+      #erro p:last-child {
+        margin-bottom: 0;
       }
 
-      #erro p + p {
-        margin-top: 8px;
-      }
-
-      .footer-note {
+      .counter {
         margin-top: 20px;
-        font-size: 0.92rem;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        font-size: 0.95rem;
+        color: var(--muted);
       }
 
-      [hidden] {
-        display: none;
+      @media (max-width: 900px) {
+        .card {
+          max-width: 680px;
+        }
       }
 
       @media (max-width: 720px) {
@@ -350,34 +337,60 @@ function renderHomePage(url: URL): string {
         }
 
         .card {
-          padding: 22px;
-          border-radius: 18px;
-        }
-
-        .grid {
-          grid-template-columns: 1fr;
+          padding: 24px;
+          border-radius: 16px;
         }
 
         fieldset {
           padding: 16px;
+        }
+
+        .actions {
+          align-items: stretch;
+        }
+
+        button {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .card {
+          padding: 20px;
+        }
+
+        form {
+          gap: 16px;
+        }
+
+        fieldset {
+          padding: 14px;
+          gap: 14px;
+        }
+
+        .grid {
+          gap: 14px;
+        }
+
+        input,
+        button {
+          min-height: 44px;
+          padding: 11px 13px;
         }
       }
     </style>
   </head>
   <body>
     <main>
-      <section class="card" aria-labelledby="titulo-principal">
+      <section class="card" aria-labelledby="titulo-pagina">
         <div class="eyebrow">iFactory • Simulação financeira</div>
-        <h1 id="titulo-principal">Calculadora Financeira iFactory</h1>
+        <h1 id="titulo-pagina">Calculadora de juros compostos</h1>
         <p>
-          Informe os dados abaixo para calcular uma simulação financeira com
-          valor principal, taxa mensal e prazo em meses.
+          Simule o montante final a partir do valor inicial, taxa mensal e período em meses.
         </p>
-
         <form method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
-
             <div class="grid">
               <div class="field">
                 <label for="principal">Valor principal *</label>
@@ -387,15 +400,12 @@ function renderHomePage(url: URL): string {
                   type="text"
                   inputmode="decimal"
                   placeholder="Ex.: 1000,00"
-                  aria-describedby="principal-ajuda"
                   value="${escapeHtml(principalValue)}"
                   required
+                  aria-describedby="principal-ajuda"
                 />
-                <p id="principal-ajuda" class="hint">
-                  Informe o valor inicial da aplicação ou investimento.
-                </p>
+                <small id="principal-ajuda">Informe o valor inicial da aplicação.</small>
               </div>
-
               <div class="field">
                 <label for="taxaMensal">Taxa mensal (%) *</label>
                 <input
@@ -404,15 +414,12 @@ function renderHomePage(url: URL): string {
                   type="text"
                   inputmode="decimal"
                   placeholder="Ex.: 1,50"
-                  aria-describedby="taxaMensal-ajuda"
                   value="${escapeHtml(monthlyRateValue)}"
                   required
+                  aria-describedby="taxaMensal-ajuda"
                 />
-                <p id="taxaMensal-ajuda" class="hint">
-                  Use percentual mensal, aceitando vírgula ou ponto.
-                </p>
+                <small id="taxaMensal-ajuda">Use percentual mensal, com ponto ou vírgula.</small>
               </div>
-
               <div class="field">
                 <label for="meses">Meses *</label>
                 <input
@@ -421,47 +428,68 @@ function renderHomePage(url: URL): string {
                   type="text"
                   inputmode="numeric"
                   placeholder="Ex.: 12"
-                  aria-describedby="meses-ajuda"
                   value="${escapeHtml(monthsValue)}"
                   required
+                  aria-describedby="meses-ajuda"
                 />
-                <p id="meses-ajuda" class="hint">
-                  Informe a duração da simulação em meses inteiros.
-                </p>
+                <small id="meses-ajuda">Digite apenas números inteiros.</small>
               </div>
             </div>
-
-            <button type="submit">Calcular</button>
           </fieldset>
+
+          <div class="actions">
+            <button type="submit">Calcular</button>
+            <p id="status-descricao" class="status">${escapeHtml(statusDescription)}</p>
+          </div>
+
+          <section aria-labelledby="titulo-resultado">
+            <h2 id="titulo-resultado">Resultado da simulação</h2>
+            <div class="panel">${resultSection}</div>
+            <div class="panel">${errorSection}</div>
+          </section>
         </form>
-
-        <section class="status" aria-labelledby="resultado-titulo">
-          <h2 id="resultado-titulo">Resultado da simulação</h2>
-          <p id="status-descricao">${escapeHtml(statusDescription)}</p>
-          ${resultSection}
-          ${errorSection}
-        </section>
-
-        <p class="footer-note">${escapeHtml(formatCounterMessage(counter.increment()))}</p>
+        <div class="counter">${escapeHtml(formatCounterMessage(counter.current()))}</div>
       </section>
     </main>
   </body>
 </html>`;
 }
 
-export function handler(request: Request): Response {
-  const url = new URL(request.url);
-
-  if (request.method !== "GET" || url.pathname !== "/") {
-    return new Response("Not Found", { status: 404 });
-  }
-
-  return new Response(renderHomePage(url), {
-    status: 200,
+function jsonResponse(body: string, init?: ResponseInit): Response {
+  return new Response(body, {
+    ...init,
     headers: {
-      "content-type": "text/html; charset=utf-8",
+      "content-type": "application/json; charset=utf-8",
+      ...(init?.headers ?? {}),
     },
   });
+}
+
+export function handler(request: Request): Response | Promise<Response> {
+  const url = new URL(request.url);
+
+  if (request.method === "GET" && url.pathname === "/") {
+    return new Response(renderHomePage(url), {
+      status: 200,
+      headers: {
+        "content-type": "text/html; charset=utf-8",
+      },
+    });
+  }
+
+  if (request.method === "GET" && url.pathname === "/health") {
+    return jsonResponse(JSON.stringify({ ok: true }), { status: 200 });
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/visits") {
+    const visits = counter.increment();
+    return jsonResponse(
+      JSON.stringify({ visits, message: formatCounterMessage(visits) }),
+      { status: 200 },
+    );
+  }
+
+  return new Response("Not Found", { status: 404 });
 }
 
 if (import.meta.main) {

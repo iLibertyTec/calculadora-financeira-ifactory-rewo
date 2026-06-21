@@ -5,13 +5,13 @@ const counter = new VisitCounter();
 
 interface JurosCompostosPayload {
   principal: number;
-  taxaMensal: number;
+  taxaMensalPercentual: number;
   meses: number;
 }
 
 function validarCampoNumerico(
   valor: unknown,
-  nomeCampo: "principal" | "taxaMensal" | "meses",
+  nomeCampo: "principal" | "taxaMensalPercentual" | "meses",
 ): number {
   if (typeof valor === "undefined") {
     throw new TypeError(`${nomeCampo} é obrigatório.`);
@@ -33,8 +33,8 @@ function validarRegrasDeDominio(
     throw new RangeError("principal não pode ser negativo.");
   }
 
-  if (payload.taxaMensal < 0) {
-    throw new RangeError("taxaMensal não pode ser negativa.");
+  if (payload.taxaMensalPercentual < 0) {
+    throw new RangeError("taxaMensalPercentual não pode ser negativa.");
   }
 
   if (payload.meses < 0) {
@@ -54,10 +54,17 @@ function parseJurosCompostosPayload(body: unknown): JurosCompostosPayload {
   }
 
   const payload = body as Record<string, unknown>;
+  const taxaMensalPercentual = typeof payload.taxaMensalPercentual !==
+      "undefined"
+    ? payload.taxaMensalPercentual
+    : payload.taxaMensal;
 
   return validarRegrasDeDominio({
     principal: validarCampoNumerico(payload.principal, "principal"),
-    taxaMensal: validarCampoNumerico(payload.taxaMensal, "taxaMensal"),
+    taxaMensalPercentual: validarCampoNumerico(
+      taxaMensalPercentual,
+      "taxaMensalPercentual",
+    ),
     meses: validarCampoNumerico(payload.meses, "meses"),
   });
 }
@@ -101,8 +108,15 @@ export async function handler(req: Request): Promise<Response> {
         { error: "Método não permitido." },
         {
           status: 405,
-          headers: { "allow": "POST" },
+          headers: { "Allow": "POST" },
         },
+      );
+    }
+
+    if (!req.headers.get("content-type")?.includes("application/json")) {
+      return Response.json(
+        { error: "Content-Type deve ser application/json." },
+        { status: 415 },
       );
     }
 
@@ -121,7 +135,7 @@ export async function handler(req: Request): Promise<Response> {
       const payload = parseJurosCompostosPayload(body);
       const resultado = calcularJurosCompostos(
         payload.principal,
-        payload.taxaMensal,
+        payload.taxaMensalPercentual,
         payload.meses,
       );
 
@@ -131,7 +145,7 @@ export async function handler(req: Request): Promise<Response> {
       });
     } catch (error) {
       const message = error instanceof Error
-        ? error.message.replaceAll("taxaMensalPercentual", "taxaMensal")
+        ? error.message
         : "Dados inválidos.";
       return Response.json({ error: message }, { status: 400 });
     }

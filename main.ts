@@ -108,8 +108,8 @@ function renderHomePage(url: URL): string {
     : `<output id="resultado" aria-live="polite" aria-atomic="true">${resultHtml}</output>`;
 
   const errorSection = errorHtml === ""
-    ? '<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden></div>'
-    : `<div id="erro" aria-live="assertive" aria-atomic="true" role="alert">${errorHtml}</div>`;
+    ? '<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" tabindex="-1" hidden></div>'
+    : `<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" tabindex="-1">${errorHtml}</div>`;
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -239,86 +239,77 @@ function renderHomePage(url: URL): string {
         color: var(--ink);
       }
 
+      .help {
+        margin: 0;
+        font-size: 0.92rem;
+        color: var(--muted);
+      }
+
       input {
         width: 100%;
-        padding: 12px 14px;
+        padding: 14px 16px;
         border: 1px solid var(--border);
         border-radius: 12px;
-        font-size: 1rem;
+        font: inherit;
         color: var(--ink);
         background: #fff;
       }
 
       input:focus {
-        outline: 3px solid rgba(29, 78, 216, 0.2);
+        outline: 3px solid rgba(29, 78, 216, 0.18);
         border-color: var(--accent);
       }
 
-      small {
-        color: var(--muted);
-        line-height: 1.5;
-      }
-
       button {
-        appearance: none;
-        border: 0;
+        border: none;
         border-radius: 12px;
         padding: 14px 20px;
-        background: var(--accent);
-        color: #fff;
+        font: inherit;
         font-weight: 700;
-        font-size: 1rem;
+        color: #fff;
+        background: linear-gradient(135deg, var(--accent), var(--accent-strong));
         cursor: pointer;
-        transition: background 0.2s ease;
       }
 
-      button:hover,
-      button:focus-visible {
-        background: var(--accent-strong);
-      }
-
-      .status {
-        margin-top: 20px;
-        display: grid;
-        gap: 12px;
-      }
-
-      #status-descricao {
-        margin: 0;
-      }
-
-      output,
-      [role="alert"] {
+      output, [role="alert"] {
         display: block;
-        padding: 16px;
-        border-radius: 14px;
-        border: 1px solid transparent;
         word-break: break-word;
+        border-radius: 14px;
+        padding: 16px 18px;
       }
 
       #resultado {
         background: var(--success-bg);
-        border-color: var(--success-border);
+        border: 1px solid var(--success-border);
         color: var(--success-ink);
       }
 
       #resultado strong {
-        color: inherit;
+        font-size: 1.1rem;
       }
 
       #erro {
         background: var(--danger-bg);
-        border-color: var(--danger-border);
+        border: 1px solid var(--danger-border);
         color: var(--danger);
       }
 
-      #erro p {
-        margin: 0;
-        color: inherit;
+      #erro p:last-child {
+        margin-bottom: 0;
       }
 
-      #erro p + p {
-        margin-top: 8px;
+      .actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .footer {
+        margin-top: 20px;
+        font-size: 0.95rem;
+        color: var(--muted);
       }
 
       @media (max-width: 900px) {
@@ -351,18 +342,16 @@ function renderHomePage(url: URL): string {
   </head>
   <body>
     <main>
-      <section class="card" aria-labelledby="titulo-pagina">
+      <section class="card" aria-labelledby="titulo-principal">
         <div class="eyebrow">iFactory • Simulador</div>
-        <h1 id="titulo-pagina">Calculadora financeira</h1>
+        <h1 id="titulo-principal">Calculadora de juros compostos</h1>
         <p>
-          Simule o montante final com juros compostos informando o valor
-          principal, a taxa mensal e o prazo em meses.
+          Informe os dados da simulação para calcular o montante final estimado com base em juros compostos.
         </p>
-
+        <p id="status-descricao">${escapeHtml(statusDescription)}</p>
         <form method="get" action="/" aria-describedby="status-descricao">
           <fieldset>
             <legend>Dados da simulação</legend>
-
             <div class="grid">
               <div class="field">
                 <label for="principal">Valor principal *</label>
@@ -373,14 +362,13 @@ function renderHomePage(url: URL): string {
                   inputmode="decimal"
                   placeholder="Ex.: 1000,00"
                   value="${escapeHtml(principalValue)}"
-                  required
                   aria-describedby="principal-ajuda"
+                  required
                 />
-                <small id="principal-ajuda">
-                  Informe o valor inicial do investimento ou aplicação.
-                </small>
+                <p class="help" id="principal-ajuda">
+                  Informe o valor inicial usando vírgula ou ponto para separar os decimais.
+                </p>
               </div>
-
               <div class="field">
                 <label for="taxaMensal">Taxa mensal (%) *</label>
                 <input
@@ -390,14 +378,13 @@ function renderHomePage(url: URL): string {
                   inputmode="decimal"
                   placeholder="Ex.: 1,50"
                   value="${escapeHtml(monthlyRateValue)}"
-                  required
                   aria-describedby="taxaMensal-ajuda"
+                  required
                 />
-                <small id="taxaMensal-ajuda">
-                  Use ponto ou vírgula para representar casas decimais.
-                </small>
+                <p class="help" id="taxaMensal-ajuda">
+                  Informe a taxa mensal em percentual, usando vírgula ou ponto quando houver casas decimais.
+                </p>
               </div>
-
               <div class="field">
                 <label for="meses">Meses *</label>
                 <input
@@ -407,152 +394,133 @@ function renderHomePage(url: URL): string {
                   inputmode="numeric"
                   placeholder="Ex.: 12"
                   value="${escapeHtml(monthsValue)}"
-                  required
                   aria-describedby="meses-ajuda"
+                  required
                 />
-                <small id="meses-ajuda">
-                  Informe somente números inteiros positivos.
-                </small>
+                <p class="help" id="meses-ajuda">
+                  Informe a quantidade de meses com número inteiro maior que zero.
+                </p>
               </div>
             </div>
           </fieldset>
-
-          <button type="submit">Calcular</button>
+          <div class="actions">
+            <button type="submit">Calcular</button>
+          </div>
+          <section aria-label="Resultado da simulação">
+            ${resultSection}
+            ${errorSection}
+          </section>
         </form>
-
-        <section class="status" aria-labelledby="resultado-titulo">
-          <h2 id="resultado-titulo">Resultado da simulação</h2>
-          <p id="status-descricao">${escapeHtml(statusDescription)}</p>
-          ${resultSection}
-          ${errorSection}
-        </section>
+        <p class="footer">${escapeHtml(formatCounterMessage(counter.incrementAndGet()))}</p>
       </section>
     </main>
-
     <script>
-      const form = document.querySelector("form");
+      const formulario = document.querySelector("form");
       const resultado = document.getElementById("resultado");
       const erro = document.getElementById("erro");
       const statusDescricao = document.getElementById("status-descricao");
 
       function limparErro() {
-        erro.innerHTML = "";
+        erro.textContent = "";
         erro.hidden = true;
       }
 
+      function atualizarStatus(mensagem) {
+        statusDescricao.textContent = mensagem;
+      }
+
       function exibirErro(mensagem) {
-        resultado.innerHTML = "";
-        erro.innerHTML = "<p>" + mensagem + "</p>";
+        erro.textContent = "";
+        const paragrafo = document.createElement("p");
+        paragrafo.textContent = mensagem;
+        erro.appendChild(paragrafo);
         erro.hidden = false;
-        statusDescricao.textContent = "Não foi possível concluir a simulação.";
+        atualizarStatus("Não foi possível concluir o cálculo. Verifique a mensagem de erro exibida.");
+        erro.focus();
       }
 
       function obterMensagemErro(payload) {
         if (!payload || typeof payload !== "object") {
-          return null;
+          return "Ocorreu um erro ao calcular. Tente novamente em instantes.";
         }
 
         if (typeof payload.message === "string" && payload.message.trim() !== "") {
-          return payload.message.trim();
+          return payload.message;
         }
 
         if (typeof payload.erro === "string" && payload.erro.trim() !== "") {
-          return payload.erro.trim();
+          return payload.erro;
         }
 
-        return null;
+        return "Ocorreu um erro ao calcular. Tente novamente em instantes.";
       }
 
-      async function calcularViaApi(event) {
-        event.preventDefault();
+      async function lerPayloadJson(resposta) {
+        const texto = await resposta.text();
 
-        const formData = new FormData(form);
-        const params = new URLSearchParams();
-
-        for (const [chave, valor] of formData.entries()) {
-          params.set(chave, String(valor));
+        if (texto.trim() === "") {
+          return null;
         }
 
         try {
-          const response = await fetch("/api/calcular", {
-            method: "POST",
-            headers: {
-              "content-type": "application/json",
-            },
-            body: JSON.stringify({
-              principal: formData.get("principal"),
-              taxaMensal: formData.get("taxaMensal"),
-              meses: formData.get("meses"),
-            }),
-          });
-
-          const responseText = await response.text();
-          let payload = null;
-
-          if (responseText.trim() !== "") {
-            try {
-              payload = JSON.parse(responseText);
-            } catch {
-              payload = null;
-            }
-          }
-
-          if (!response.ok) {
-            const mensagemApi = obterMensagemErro(payload);
-            exibirErro(
-              mensagemApi ??
-                "Ocorreu um erro ao calcular. Tente novamente em instantes.",
-            );
-            return;
-          }
-
-          const redirectUrl = "/?" + params.toString();
-          const pageResponse = await fetch(redirectUrl, {
-            headers: {
-              "x-requested-with": "fetch",
-            },
-          });
-
-          if (!pageResponse.ok) {
-            exibirErro(
-              "Ocorreu um erro ao atualizar o resultado. Tente novamente em instantes.",
-            );
-            return;
-          }
-
-          const html = await pageResponse.text();
-          const doc = new DOMParser().parseFromString(html, "text/html");
-          const novoResultado = doc.getElementById("resultado");
-          const novaDescricao = doc.getElementById("status-descricao");
-
-          if (novoResultado && novaDescricao) {
-            resultado.innerHTML = novoResultado.innerHTML;
-            statusDescricao.textContent = novaDescricao.textContent ?? "";
-            limparErro();
-            history.replaceState(null, "", redirectUrl);
-            return;
-          }
-
-          exibirErro(
-            "Ocorreu um erro ao atualizar o resultado. Tente novamente em instantes.",
-          );
+          return JSON.parse(texto);
         } catch {
-          exibirErro(
-            "Não foi possível calcular no momento por falha de rede. Tente novamente mais tarde.",
-          );
+          return null;
         }
       }
 
-      if (form && resultado && erro && statusDescricao) {
-        form.addEventListener("submit", calcularViaApi);
+      if (formulario && resultado && erro && statusDescricao) {
+        formulario.addEventListener("submit", async (event) => {
+          event.preventDefault();
+
+          const formData = new FormData(formulario);
+          const payload = {
+            principal: formData.get("principal"),
+            taxaMensal: formData.get("taxaMensal"),
+            meses: formData.get("meses"),
+          };
+
+          try {
+            const resposta = await fetch("/api/calcular", {
+              method: "POST",
+              headers: {
+                "content-type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            });
+
+            const dados = await lerPayloadJson(resposta);
+
+            if (!resposta.ok) {
+              resultado.innerHTML = "";
+              exibirErro(obterMensagemErro(dados));
+              return;
+            }
+
+            limparErro();
+            atualizarStatus("Simulação calculada com sucesso. Confira o resultado abaixo.");
+            const totalFormatado =
+              dados && typeof dados.totalFormatado === "string"
+                ? dados.totalFormatado
+                : "";
+            resultado.innerHTML = totalFormatado === ""
+              ? "Montante final estimado calculado com sucesso."
+              : `Montante final estimado: <strong>${totalFormatado}</strong>.`;
+          } catch {
+            resultado.innerHTML = "";
+            exibirErro(
+              "Não foi possível calcular no momento por falha de rede. Tente novamente mais tarde.",
+            );
+          }
+        });
       }
     </script>
   </body>
 </html>`;
 }
 
-function jsonResponse(body: string, status = 200): Response {
-  return new Response(body, {
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
@@ -560,87 +528,56 @@ function jsonResponse(body: string, status = 200): Response {
   });
 }
 
-async function handleCalculationApi(request: Request): Promise<Response> {
+async function handleApiCalcular(request: Request): Promise<Response> {
+  let payload: Record<string, unknown>;
+
   try {
-    const body = await request.json();
-    const principal = parseDecimal(String(body.principal ?? ""));
-    const monthlyRate = parseDecimal(String(body.taxaMensal ?? ""));
-    const months = parseInteger(String(body.meses ?? ""));
-
-    if (principal === null || principal <= 0) {
-      return jsonResponse(
-        JSON.stringify({
-          message: "Informe um valor principal maior que zero.",
-        }),
-        400,
-      );
-    }
-
-    if (monthlyRate === null || monthlyRate < 0) {
-      return jsonResponse(
-        JSON.stringify({
-          message: "Informe uma taxa mensal válida, igual ou maior que zero.",
-        }),
-        400,
-      );
-    }
-
-    if (months === null || months <= 0) {
-      return jsonResponse(
-        JSON.stringify({
-          message:
-            "Informe a quantidade de meses com número inteiro maior que zero.",
-        }),
-        400,
-      );
-    }
-
-    const total = calculateCompoundAmount(principal, monthlyRate, months);
-
-    return jsonResponse(
-      JSON.stringify({
-        total,
-        totalFormatado: formatCurrency(total),
-      }),
-    );
+    payload = await request.json();
   } catch {
+    return jsonResponse({ message: "Não foi possível interpretar os dados enviados." }, 400);
+  }
+
+  const principal = parseDecimal(String(payload.principal ?? ""));
+  const monthlyRate = parseDecimal(String(payload.taxaMensal ?? ""));
+  const months = parseInteger(String(payload.meses ?? ""));
+
+  if (principal === null || principal <= 0) {
+    return jsonResponse({ message: "Informe um valor principal maior que zero." }, 400);
+  }
+
+  if (monthlyRate === null || monthlyRate < 0) {
     return jsonResponse(
-      JSON.stringify({
-        message: "Não foi possível processar a solicitação no momento.",
-      }),
-      500,
+      { message: "Informe uma taxa mensal válida, igual ou maior que zero." },
+      400,
     );
   }
+
+  if (months === null || months <= 0) {
+    return jsonResponse(
+      {
+        message:
+          "Informe a quantidade de meses com número inteiro maior que zero.",
+      },
+      400,
+    );
+  }
+
+  const total = calculateCompoundAmount(principal, monthlyRate, months);
+
+  return jsonResponse({
+    total,
+    totalFormatado: formatCurrency(total),
+  });
 }
 
 export async function handler(request: Request): Promise<Response> {
   const url = new URL(request.url);
 
-  if (url.pathname === "/health") {
-    return jsonResponse(
-      JSON.stringify({
-        ok: true,
-        service: "calculadora-financeira-ifactory-rewo",
-        version: "1.0.0",
-      }),
-    );
+  if (request.method === "POST" && url.pathname === "/api/calcular") {
+    return await handleApiCalcular(request);
   }
 
-  if (url.pathname === "/api/visits") {
-    const visits = counter.increment();
-    return jsonResponse(
-      JSON.stringify({
-        visits,
-        message: formatCounterMessage(visits),
-      }),
-    );
-  }
-
-  if (url.pathname === "/api/calcular" && request.method === "POST") {
-    return await handleCalculationApi(request);
-  }
-
-  if (url.pathname === "/") {
+  if (request.method === "GET" && url.pathname === "/") {
     return new Response(renderHomePage(url), {
       headers: {
         "content-type": "text/html; charset=utf-8",

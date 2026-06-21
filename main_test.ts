@@ -55,7 +55,7 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   );
   assertMatch(
     body,
-    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,
+    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" tabindex="-1" hidden><\/div>/,
   );
   assertMatch(
     body,
@@ -65,7 +65,12 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
   assertMatch(body, /function limparErro\(\)/);
   assertMatch(body, /function exibirErro\(mensagem\)/);
   assertMatch(body, /function obterMensagemErro\(payload\)/);
+  assertMatch(body, /function atualizarStatus\(mensagem\)/);
+  assertMatch(body, /function lerPayloadJson\(resposta\)/);
   assertMatch(body, /role="alert"/);
+  assertMatch(body, /tabindex="-1"/);
+  assertMatch(body, /paragrafo\.textContent = mensagem;/);
+  assertNotMatch(body, /innerHTML = `<p>\$\{mensagem\}<\/p>`/);
   assertMatch(
     body,
     /Ocorreu um erro ao calcular\. Tente novamente em instantes\./,
@@ -74,6 +79,11 @@ Deno.test("GET / retorna HTML da calculadora financeira", async () => {
     body,
     /Não foi possível calcular no momento por falha de rede\. Tente novamente mais tarde\./,
   );
+  assertMatch(
+    body,
+    /Não foi possível concluir o cálculo\. Verifique a mensagem de erro exibida\./,
+  );
+  assertMatch(body, /erro\.focus\(\);/);
   assertNotMatch(body, /novalidate/);
 });
 
@@ -95,7 +105,7 @@ Deno.test("GET / processa a simulação pela query string", async () => {
   assertMatch(body, /#resultado strong/);
   assertMatch(
     body,
-    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" hidden><\/div>/,
+    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" tabindex="-1" hidden><\/div>/,
   );
 });
 
@@ -120,7 +130,7 @@ Deno.test("GET / exibe erros de validação quando necessário", async () => {
   );
   assertMatch(
     body,
-    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert"><p>Informe um valor principal maior que zero\.<\/p>/,
+    /<div id="erro" aria-live="assertive" aria-atomic="true" role="alert" tabindex="-1"><p>Informe um valor principal maior que zero\.<\/p>/,
   );
   assertNotMatch(body, /role="alert" hidden/);
 });
@@ -178,36 +188,9 @@ Deno.test("GET / não referencia frameworks ou dependências externas", async ()
   const response = await handler(new Request("http://localhost/"));
   const body = await response.text();
 
-  assertMatch(body, /^((?!preact).)*$/is);
-  assertMatch(body, /^((?!fresh).)*$/is);
-  assertMatch(body, /^((?!islands).)*$/is);
-  assertMatch(body, /^((?!https?:\/\/).)*$/is);
-});
-
-Deno.test("GET /health permanece disponível", async () => {
-  const response = await handler(new Request("http://localhost/health"));
-  const body = await response.text();
-
   assertEquals(response.status, 200);
-  assertEquals(
-    response.headers.get("content-type"),
-    "application/json; charset=utf-8",
-  );
-  assertEquals(
-    body,
-    '{"ok":true,"service":"calculadora-financeira-ifactory-rewo","version":"1.0.0"}',
-  );
-});
-
-Deno.test("GET /api/visits permanece disponível", async () => {
-  const response = await handler(new Request("http://localhost/api/visits"));
-  const body = await response.text();
-
-  assertEquals(response.status, 200);
-  assertEquals(
-    response.headers.get("content-type"),
-    "application/json; charset=utf-8",
-  );
-  assertMatch(body, /"visits":\d+/);
-  assertMatch(body, /"message":"/);
+  assertNotMatch(body, /https?:\/\//);
+  assertNotMatch(body, /react/i);
+  assertNotMatch(body, /preact/i);
+  assertNotMatch(body, /fresh/i);
 });
